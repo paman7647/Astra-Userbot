@@ -136,6 +136,18 @@ async def shutdown(sig: Optional[signal.Signals] = None):
     logger.info("Astra Userbot stopped. Goodbye!")
     sys.exit(0)
 
+
+import os
+import subprocess
+from aiohttp import web
+
+async def health_check(request):
+    """Simple health check endpoint for Render to prevent the web service from sleeping/failing."""
+    return web.Response(text="Astra Userbot Web Environment is healthy and active.", status=200)
+
+app = web.Application()
+app.router.add_get('/', health_check)
+app.router.add_get('/health', health_check)
 async def main():
     """Main runner for the Astra Userbot."""
     # Register OS signal handlers for graceful shutdown
@@ -144,8 +156,10 @@ async def main():
         loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s)))
 
     # Start the client engine
+    
     async with client:
         logger.info("Astra Engine active. Listening for events...")
+        await web.run_app(app, host='0.0.0.0', port=10000)
         await client.run_forever()
 
 if __name__ == "__main__":
