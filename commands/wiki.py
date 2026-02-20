@@ -15,6 +15,7 @@ Supports rich media previews when available.
 
 import aiohttp
 import base64
+import time
 from . import *
 
 @astra_command(
@@ -44,7 +45,10 @@ async def wiki_handler(client: Client, message: Message):
                 search_data = await resp.json()
         
             if not search_data['query']['search']:
-                return await status_msg.edit(f" ⚠️ No exact results found for `{query}`.")
+                try:
+                    return await status_msg.edit(f" ⚠️ No exact results found for `{query}`.")
+                except:
+                    return await message.reply(f" ⚠️ No exact results found for `{query}`.")
     
             best_match = search_data['query']['search'][0]['title']
     
@@ -52,7 +56,10 @@ async def wiki_handler(client: Client, message: Message):
             summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{best_match.replace(' ', '_')}"
             async with session.get(summary_url, timeout=10) as resp:
                 if resp.status != 200:
-                    return await status_msg.edit(" ⚠️ Failed to retrieve article summary.")
+                    try:
+                        return await status_msg.edit(" ⚠️ Failed to retrieve article summary.")
+                    except:
+                        return await message.reply(" ⚠️ Failed to retrieve article summary.")
                 data = await resp.json()
     
             # Compose text report
@@ -77,7 +84,10 @@ async def wiki_handler(client: Client, message: Message):
                         await client.send_media(message.chat_id, media, caption=response)
                         return await status_msg.delete()
 
-            await status_msg.edit(response)
+            try:
+                await status_msg.edit(response)
+            except:
+                await message.reply(response)
 
     except Exception as e:
         await smart_reply(message, " ⚠️ Wikipedia search failed.")

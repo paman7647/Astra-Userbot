@@ -6,20 +6,16 @@
 # See LICENSE file in the project root for full license text.
 # -----------------------------------------------------------
 
-"""
-YouTube Media Integration
--------------------------
-A high-performance media downloading plugin that utilizes a Node.js 
-bridge to execute yt-dlp operations safely outside the Python event loop.
-"""
-
 import os
-import time
 import shutil
 import asyncio
 import json
+import re
+import random
+import time
 from . import *
 from config import config
+from utils.helpers import get_progress_bar
 
 @astra_command(
     name="youtube",
@@ -31,102 +27,166 @@ from config import config
 )
 async def youtube_handler(client: Client, message: Message):
     """
-    Handles media download requests. 
-    Routes the URL to the JavaScript bridge for secure processing.
+    Handles media download requests with live progress bar.
     """
     try:
         args_list = extract_args(message)
         if not args_list:
-            return await smart_reply(message, " ❌ Please provider a valid YouTube URL.")
+            return await smart_reply(message, " ❌ Please provide a valid YouTube URL.")
 
         # System validation
-        if not shutil.which("yt-dlp"):
-             return await smart_reply(message, "⚠️ `yt-dlp` system dependency is missing. Please run `setup.sh`.")
-
-        node_bin = shutil.which("node")
-        if not node_bin:
-            return await smart_reply(message, "⚠️ `Node.js` is required for this operation.")
+        if not shutil.which("node"):
+            return await smart_reply(message, "⚠️ `Node.js` is required for media operations.")
 
         # Argument parsing
         url = args_list[0]
         as_doc = any(opt in args_list for opt in ["doc", "document", "--doc", "--document"])
-        mode = "video" if "video" in [arg.lower() for arg in args_list] else "audio"
+        
+        # Robust mode detection
+        video_keywords = ["video", "vid", "mp4", "mkv", "720p", "1080p"]
+        args_lower = [arg.lower() for arg in args_list]
+        mode = "video" if any(kw in args_lower for kw in video_keywords) else "audio"
 
-        status_msg = await smart_reply(message, f" ⏳ *Astra Media Engine processing {mode}...*")
-
-        # Workspace preparation
-        temp_dir = os.path.join(os.getcwd(), "temp")
-        os.makedirs(temp_dir, exist_ok=True)
+        status_msg = await smart_reply(message, f" 🔍 *Initializing Astra Media Engine...*")
 
         # Cross-language Bridge Execution
-        # -------------------------------
-        # We invoke the Node.js bridge to handle complex yt-dlp logic, 
-        # which provides better bypasses and concurrency for media downloads.
         bridge_script = os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils", "js_downloader.js")
-        
         cookies_file = getattr(config, 'YOUTUBE_COOKIES_FILE', '') or ''
         cookies_browser = getattr(config, 'YOUTUBE_COOKIES_FROM_BROWSER', '') or ''
 
         process = await asyncio.create_subprocess_exec(
-            node_bin, bridge_script,
+            "node", bridge_script,
             url, mode, 
             cookies_file, cookies_browser,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
 
-        stdout_raw, stderr_raw = await process.communicate()
+        metadata = {"title": "Pending...", "platform": "YouTube", "uploader": "Unknown", "url": url}
+        files = []
+        last_update_time = 0
+
+        # Read output stream for Metadata and Progress
+        while True:
+            line = await process.stdout.readline()
+            if not line: break
+            
+            line_str = line.decode('utf-8', errors='ignore').strip()
+            
+            # 1. Capture Metadata
+            if line_str.startswith("METADATA:"):
+                metadata.update(json.loads(line_str.replace("METADATA:", "")))
+                try:
+                    await status_msg.edit(
+                        f"✨ *{metadata['title']}*\n"
+                        f"🌐 *Platform:* {metadata['platform']}\n"
+                        f"📂 *Mode:* {mode.capitalize()}\n\n"
+                        f"⏳ *Preparing download...*"
+                    )
+                except: pass
+                continue
+
+            # 2. Capture Progress
+            if "[download]" in line_str and "%" in line_str:
+                match = re.search(r"(\d+\.\d+)% of\s+([\d\.]+\w+)\s+at\s+([\d\.]+\w+/s)\s+ETA\s+(\d+:\d+)", line_str)
+                if match:
+                    pct, size, speed, eta = match.groups()
+                    pct = float(pct)
+                    
+                    current_time = time.time()
+                    if current_time - last_update_time > 2.0 or pct >= 100:
+                        bar = get_progress_bar(pct)
+                        try:
+                            await status_msg.edit(
+                                f"✨ *{metadata['title']}*\n"
+                                f"🌐 *Platform:* {metadata['platform']}\n\n"
+                                f"📥 *Downloading:* {bar}\n"
+                                f"📋 *Size:* `{size}`\n"
+                                f"⚡ *Speed:* `{speed}`\n"
+                                f"⏳ *Remaining:* `{eta}`"
+                            )
+                            last_update_time = current_time
+                        except: pass
+
+            # 3. Capture Success
+            if line_str.startswith("SUCCESS:"):
+                res = json.loads(line_str.replace("SUCCESS:", ""))
+                files = res.get('files', [])
+
+        await process.wait()
 
         if process.returncode != 0:
-            err_log = stderr_raw.decode(errors='ignore')[:800]
-            await status_msg.edit(f" ❌ Media Core Error:\n```{err_log}```")
-            return
-
-        # Result retrieval
-        try:
-            res = json.loads(stdout_raw.decode())
-            if not res.get('success'):
-                raise Exception(res.get('error', 'Bridge synchronization failure'))
-            files = res.get('files', [])
-        except Exception as jerr:
-            return await status_msg.edit(f" ❌ Bridge communication error: {str(jerr)}")
+            stderr = await process.stderr.read()
+            err_log = stderr.decode(errors='ignore')[:500]
+            return await status_msg.edit(f" ❌ Media Core Error:\n```{err_log}```")
 
         if not files:
-            return await status_msg.edit(" ❌ Target file not found post-download.")
+            return await status_msg.edit(" ❌ Download failed: No files retrieved.")
 
         file_path = files[0]
+        file_size = os.path.getsize(file_path)
+        file_size_mb = file_size / (1024 * 1024)
+        start_upload_time = time.time()
+        upload_last_update = 0
+        
+        # Enhanced Caption
+        caption = (
+            f"✨ *{metadata['title']}*\n"
+            f"👤 *Channel:* {metadata.get('uploader', 'Unknown')}\n"
+            f"🔗 *Source:* {metadata.get('url', url)}\n\n"
+            f"🚀 *Powered by Astra UserBot*"
+        )
 
-        # Safety & Governance
-        try:
-            size_mb = os.path.getsize(file_path) / (1024*1024)
-            if size_mb > config.MAX_FILE_SIZE_MB:
-                os.remove(file_path) # Cleanup immediately
-                return await status_msg.edit(f"❌ File exceeds governance limit ({size_mb:.1f}MB > {config.MAX_FILE_SIZE_MB}MB).")
-        except Exception:
-            pass
+        async def on_upload_progress(current, total):
+            nonlocal upload_last_update
+            now = time.time()
+            if now - upload_last_update < 2.0: return
+            
+            pct = (current / total) * 100
+            bar = get_progress_bar(pct)
+            
+            # Calculate speed based on percentage of file size
+            elapsed = now - start_upload_time
+            if elapsed > 0:
+                sent_mb = (current / total) * file_size_mb
+                speed = sent_mb / elapsed
+                speed_text = f"{speed:.2f} MiB/s"
+            else:
+                speed_text = "Checking..."
 
-        # Content Delivery
-        await status_msg.edit(f" 📤 *Delivering {mode}{' as document' if as_doc else ''}...*")
+            try:
+                await status_msg.edit(
+                    f"✨ *{metadata['title']}*\n"
+                    f"🌐 *Platform:* {metadata['platform']}\n\n"
+                    f"📤 *Uploading:* {bar}\n"
+                    f"⚡ *Speed:* `{speed_text}`"
+                )
+                upload_last_update = now
+            except: pass
+
         try:
             if mode == "audio":
-                await client.send_audio(message.chat_id, file_path, reply_to=message.id)
+                await client.send_audio(message.chat_id, file_path, reply_to=message.id, progress=on_upload_progress)
             else:
-                await client.send_video(message.chat_id, file_path, reply_to=message.id)
+                # Use send_video for playback, but fallback to file if video flag is issues
+                await client.send_video(message.chat_id, file_path, caption=caption, reply_to=message.id, progress=on_upload_progress)
+            
             await status_msg.delete()
-        except Exception as upload_err:
-            # Fallback to general file send if typed send fails
+        except Exception as e:
+            # Fallback to general file send as document
             try:
-                await client.send_file(message.chat_id, file_path, document=True, reply_to_message_id=message.id)
+                await status_msg.edit(f"✨ *{metadata['title']}*\n🔄 *Finalizing delivery...*")
+                await client.send_file(message.chat_id, file_path, document=True, caption=caption, reply_to=message.id)
                 await status_msg.delete()
             except Exception as final_err:
-                await status_msg.edit(f" ❌ Delivery failed: {str(final_err)}")
-                await report_error(client, final_err, context=f'YouTube delivery failed: {url}')
+                try:
+                    await status_msg.edit(f" ❌ Delivery failed: {str(final_err)}")
+                except:
+                    await message.reply(f" ❌ Delivery failed: {str(final_err)}")
 
-        # Workspace Cleanup
-        finally:
-            if os.path.exists(file_path):
-                try: os.remove(file_path)
-                except: pass
+        # Cleanup
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
     except Exception as e:
         await smart_reply(message, f" ❌ System Error: {str(e)}")

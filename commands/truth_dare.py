@@ -80,12 +80,18 @@ async def truth_handler(client: Client, message: Message):
         if choice == "truth":
             status_msg = await smart_reply(message, " 🤔 *Fetching truth...*")
             prompt = await fetch_prompt("truth") or random.choice(TRUTHS)
-            await status_msg.edit(f"🤔 **Astra Truth:**\n\n_{prompt}_")
+            try:
+                await status_msg.edit(f"🤔 **Astra Truth:**\n\n_{prompt}_")
+            except:
+                await message.reply(f"🤔 **Astra Truth:**\n\n_{prompt}_")
             
         elif choice == "dare":
             status_msg = await smart_reply(message, " 🔥 *Fetching dare...*")
             prompt = await fetch_prompt("dare") or random.choice(DARES)
-            await status_msg.edit(f"🔥 **Astra Dare:**\n\n_{prompt}_")
+            try:
+                await status_msg.edit(f"🔥 **Astra Dare:**\n\n_{prompt}_")
+            except:
+                await message.reply(f"🔥 **Astra Dare:**\n\n_{prompt}_")
             
         else:
             await smart_reply(message, " 📋 Usage: `.truth` | `.dare` | `.td <truth|dare>`")

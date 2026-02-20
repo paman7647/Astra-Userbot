@@ -10,9 +10,12 @@ import asyncio
 import os
 import time
 import json
+import re
 import shutil
+import random
 from config import config
 from . import *
+from utils.helpers import get_progress_bar
 
 @astra_command(
     name="spotify",
@@ -23,67 +26,131 @@ from . import *
     owner_only=False
 )
 async def spotify_handler(client: Client, message: Message):
-    """Download/Search Spotify track"""
+    """Download/Search Spotify track with live progress"""
     try:
         args_list = extract_args(message)
-        
         if not args_list:
             return await smart_reply(message, " ❌ Provide a Spotify link or song name.")
 
         query = " ".join(args_list)
-        status_msg = await smart_reply(message, " ⏳ *Fetching track...*")
-
-        temp_dir = os.path.join(os.getcwd(), "temp")
-        os.makedirs(temp_dir, exist_ok=True)
-
-        timestamp = int(time.time())
-        # output_tmpl = os.path.join(temp_dir, f"sp_{timestamp}_%(id)s.%(ext)s")
+        status_msg = await smart_reply(message, f" 🔍 *Initializing Spotify Engine...*")
 
         # Searching on YouTube as fallback/source for downloads
         search_query = f"ytsearch:{query}" if "spotify.com" not in query else query
 
-        # Use Node.js bridge to bypass Python 3.14 environment issues
-        node_bin = "/opt/homebrew/bin/node"
         bridge_script = os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils", "js_downloader.js")
-
         cookies_file = getattr(config, 'YOUTUBE_COOKIES_FILE', '') or ''
         cookies_browser = getattr(config, 'YOUTUBE_COOKIES_FROM_BROWSER', '') or ''
 
-        bridge_cmd = [
-            node_bin, bridge_script,
-            search_query, "audio", 
-            cookies_file, cookies_browser
-        ]
         process = await asyncio.create_subprocess_exec(
-            *bridge_cmd,
+            "node", bridge_script,
+            search_query, "audio", 
+            cookies_file, cookies_browser,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
 
-        stdout_data, stderr_data = await process.communicate()
+        metadata = {"title": query, "platform": "Spotify/Search", "uploader": "Unknown", "url": query}
+        files = []
+        last_update_time = 0
+
+        # Read output stream
+        while True:
+            line = await process.stdout.readline()
+            if not line: break
+            line_str = line.decode('utf-8', errors='ignore').strip()
+            
+            if line_str.startswith("METADATA:"):
+                metadata.update(json.loads(line_str.replace("METADATA:", "")))
+                try:
+                    await status_msg.edit(
+                        f"✨ *{metadata['title']}*\n"
+                        f"🌐 *Platform:* {metadata['platform']}\n\n"
+                        f"⏳ *Accessing content...*"
+                    )
+                except: pass
+                continue
+
+            if "[download]" in line_str and "%" in line_str:
+                match = re.search(r"(\d+\.\d+)% of\s+([\d\.]+\w+)\s+at\s+([\d\.]+\w+/s)\s+ETA\s+(\d+:\d+)", line_str)
+                if match:
+                    pct, size, speed, eta = match.groups()
+                    pct = float(pct)
+                    current_time = time.time()
+                    if current_time - last_update_time > 2.0 or pct >= 100:
+                        bar = get_progress_bar(pct)
+                        try:
+                            await status_msg.edit(
+                                f"✨ *{metadata['title']}*\n"
+                                f"🌐 *Platform:* {metadata['platform']}\n\n"
+                                f"📥 *Downloading:* {bar}\n"
+                                f"📋 *Size:* `{size}`\n"
+                                f"⚡ *Speed:* `{speed}`\n"
+                                f"⏳ *Remaining:* `{eta}`"
+                            )
+                            last_update_time = current_time
+                        except: pass
+
+            if line_str.startswith("SUCCESS:"):
+                res = json.loads(line_str.replace("SUCCESS:", ""))
+                files = res.get('files', [])
+
+        await process.wait()
 
         if process.returncode != 0:
-            err_text = stderr_data.decode(errors='ignore')[:300]
-            return await status_msg.edit(f"❌ Spotify download failed via JS Bridge:\n```{err_text}```")
+            stderr = await process.stderr.read()
+            err_text = stderr.decode(errors='ignore')[:300]
+            return await status_msg.edit(f"❌ Spotify Core Error:\n```{err_text}```")
 
-        try:
-            res = json.loads(stdout_data.decode())
-            if not res.get('success'):
-                raise Exception(res.get('error', 'Unknown bridge error'))
-            files_found = res.get('files', [])
-        except Exception as jerr:
-            return await status_msg.edit(f" ❌ Bridge output error: {str(jerr)}")
-
-        if not files_found:
+        if not files:
             return await status_msg.edit(" ❌ Could not find track.")
 
-        file_path = files_found[0]
-        await status_msg.edit(" 📤 *Uploading...*")
+        file_path = files[0]
+        file_size = os.path.getsize(file_path)
+        file_size_mb = file_size / (1024 * 1024)
+        start_upload_time = time.time()
+        upload_last_update = 0
+        
+        async def on_upload_progress(current, total):
+            nonlocal upload_last_update
+            now = time.time()
+            if now - upload_last_update < 2.0: return
+            
+            pct = (current / total) * 100
+            bar = get_progress_bar(pct)
+            
+            elapsed = now - start_upload_time
+            if elapsed > 0:
+                sent_mb = (current / total) * file_size_mb
+                speed = sent_mb / elapsed
+                speed_text = f"{speed:.2f} MiB/s"
+            else:
+                speed_text = "Checking..."
 
-        await client.send_audio(message.chat_id, file_path)
-        await status_msg.delete()
+            try:
+                await status_msg.edit(
+                    f"✨ *{metadata['title']}*\n"
+                    f"🌐 *Platform:* {metadata['platform']}\n\n"
+                    f"📤 *Uploading:* {bar}\n"
+                    f"⚡ *Speed:* `{speed_text}`"
+                )
+                upload_last_update = now
+            except: pass
+
+        try:
+            await client.send_audio(message.chat_id, file_path, reply_to=message.id, progress=on_upload_progress)
+            await status_msg.delete()
+        except Exception as e:
+            try:
+                await status_msg.edit(f"✨ *{metadata['title']}*\n🔄 *Finalizing delivery...*")
+                await client.send_file(message.chat_id, file_path, document=True, reply_to=message.id)
+                await status_msg.delete()
+            except Exception as final_err:
+                try: await status_msg.edit(f" ❌ Delivery failed: {str(final_err)}")
+                except: await message.reply(f" ❌ Delivery failed: {str(final_err)}")
 
         if os.path.exists(file_path): os.remove(file_path)
+
     except Exception as e:
-        await smart_reply(message, f" ❌ Error: {str(e)}")
-        await report_error(client, e, context='Command spotify failed')
+        await smart_reply(message, f" ❌ System Error: {str(e)}")
+        await report_error(client, e, context='Spotify command root failure')

@@ -6,8 +6,9 @@
 # See LICENSE file in the project root for full license text.
 # -----------------------------------------------------------
 
-from . import *
 import platform
+import time
+from . import *
 
 # --- Platform Command ---
 @astra_command(
@@ -26,7 +27,10 @@ async def platform_cmd(client: Client, message: Message):
         sys_info += f"Version: {platform.version()}\n"
         sys_info += f"Machine: {platform.machine()}"
 
-        await status_msg.edit(sys_info)
+        try:
+            await status_msg.edit(sys_info)
+        except:
+            await message.reply(sys_info)
     except Exception as e:
         await message.reply(f"❌ Error: {e}")
 
@@ -42,6 +46,9 @@ async def start_cmd(client: Client, message: Message):
     try:
         msg = await message.reply("🤖 Starting Astra...")
         # Verify edit capabilities
-        await msg.edit("🤖 **Astra Userbot is Online!**\nSystem is ready to serve.")
+        try:
+            await msg.edit("🤖 **Astra Userbot is Online!**\nSystem is ready to serve.")
+        except:
+            await message.reply("🤖 **Astra Userbot is Online!**\nSystem is ready to serve.")
     except Exception as e:
         await message.reply(f"❌ Error: {e}")

@@ -64,8 +64,9 @@ def astra_command(
     """
     if aliases is None: aliases = []
     
-    # Register metadata
-    COMMANDS_METADATA.append({
+    # Register metadata (Replacing if exists)
+    global COMMANDS_METADATA
+    new_entry = {
         "name": name,
         "description": description,
         "category": category,
@@ -73,7 +74,13 @@ def astra_command(
         "usage": usage,
         "owner_only": owner_only,
         "is_public": is_public
-    })
+    }
+    # Mutate in-place to ensure all modules see the updates
+    for i, cmd in enumerate(COMMANDS_METADATA):
+        if cmd['name'] == name:
+            COMMANDS_METADATA.pop(i)
+            break
+    COMMANDS_METADATA.append(new_entry)
 
     def decorator(func):
         # Build the native filter by ORing name and aliases
@@ -177,12 +184,76 @@ def unload_plugin(client: Client, plugin_name: str):
         for handle in PLUGIN_HANDLES[plugin_name]:
             client.events.off(handle)
         
-        # Remove from metadata registry too to avoid duplicates
+        # Remove from metadata registry
         global COMMANDS_METADATA
-        # Filter out commands belonging to this module? 
-        # COMMANDS_METADATA doesn't store module name easily unless we parse it.
-        # But usually duplicate Help entries are checking name collision. 
-        # For simple reload, we might leave it or clear duplicates later.
+        COMMANDS_METADATA = [cmd for cmd in COMMANDS_METADATA if not str(cmd.get('name', '')).startswith(f"{plugin_name}.")]
+        # Note: If duplicate names exist across modules, this might be tricky,
+        # but astra_command handles deduplication by name anyway.
         
         del PLUGIN_HANDLES[plugin_name]
         logger.info(f"Unloaded plugin: {plugin_name}")
+
+def reload_all_plugins(client: Client) -> int:
+    """
+    Hot-reloads all plugins and project modules without restarting the client.
+    """
+    import os
+    import sys
+    import importlib
+    import pkgutil
+    from pathlib import Path
+
+    from astra import Client as AstraClient
+
+    # 0. Emergency Patch: If Client.fetch_messages is old, update it dynamically
+    # This allows engine changes to apply via reload!
+    async def _patched_fetch(self, *args, **kwargs):
+        return await self.chat.fetch_messages(*args, **kwargs)
+    
+    if "args" not in str(AstraClient.fetch_messages.__code__.co_varnames):
+        logger.info("Applying dynamic patch to Client.fetch_messages...")
+        AstraClient.fetch_messages = _patched_fetch
+        # Also patch the live instance
+        client.fetch_messages = _patched_fetch.__get__(client, AstraClient)
+
+    # 1. Capture and Unload
+    current_plugins = list(PLUGIN_HANDLES.keys())
+    for p in current_plugins:
+        unload_plugin(client, p)
+    
+    # 2. Core Project Reload
+    # We identify modules belonging to the bot (excluding 'astra' engine)
+    project_root = str(Path(__file__).parent.parent.resolve())
+    
+    to_reload = []
+    for name, mod in list(sys.modules.items()):
+        if not mod or not hasattr(mod, "__file__") or not mod.__file__:
+            continue
+        
+        mod_path = str(Path(mod.__file__).resolve())
+        if project_root in mod_path and "astra/" not in mod_path.replace(project_root, ""):
+            if name != "__main__" and name != "utils.plugin_utils": # Reload us last or not at all?
+                to_reload.append(name)
+
+    # Reload Config & Utils first
+    to_reload.sort(key=lambda x: (0 if "config" in x or "utils" in x else 1, x))
+    
+    for mod_name in to_reload:
+        try:
+            importlib.reload(sys.modules[mod_name])
+        except Exception as e:
+            logger.debug(f"Could not reload {mod_name}: {e}")
+
+    # 3. Discovery & Load
+    commands_dir = os.path.join(project_root, "commands")
+    success = 0
+    if os.path.exists(commands_dir):
+        # Clear metadata to start fresh
+        global COMMANDS_METADATA
+        COMMANDS_METADATA.clear()
+        
+        for loader, mod_name, is_pkg in pkgutil.walk_packages([commands_dir], prefix="commands."):
+            if load_plugin(client, mod_name):
+                success += 1
+                
+    return success

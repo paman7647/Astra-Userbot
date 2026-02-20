@@ -21,79 +21,75 @@ async def help_handler(client: Client, message: Message):
     Renders an interactive help menu by parsing the global COMMANDS_METADATA registry.
     """
     import logging
+    import asyncio
     logger = logging.getLogger("Astra.Help")
     try:
-        # Debug: Check metadata
-        logger.info(f"Help triggered. Metadata size: {len(COMMANDS_METADATA)}")
-        
-        args = getattr(message, 'command', None)
-        if args and not isinstance(args, str) and hasattr(args, 'args'):
-            args_list = args.args
-        else:
-            # Fallback: Parse body manually if filter didn't attach command info or it's just a string
-            body = getattr(message, 'body', "") or ""
-            parts = body.split()
-            args_list = parts[1:] if len(parts) > 1 else []
-        
         from utils.state import state
         curr_prefix = state.get_prefix()
-
-        if args_list:
-            cmd_name = args_list[0].lower()
-            # Find command in metadata
-            cmd = next((c for c in COMMANDS_METADATA if c['name'] == cmd_name or cmd_name in c['aliases']), None)
+        
+        # Initial status message to provide the "editing" experience requested
+        status_msg = await smart_reply(message, "📖 *Loading Astra Help Menu...*")
+        
+        args = extract_args(message)
+        
+        if args:
+            # Normalize query: strip whitespace, handle case, and remove common command prefixes
+            cmd_query = args[0].lower().strip().lstrip('.!/')
+            
+            # Search with robustness: check name and aliases
+            cmd = None
+            for entry in COMMANDS_METADATA:
+                if entry['name'].lower() == cmd_query:
+                    cmd = entry
+                    break
+                if any(alias.lower() == cmd_query for alias in entry.get('aliases', [])):
+                    cmd = entry
+                    break
             
             if not cmd:
                 try:
-                    return await message.edit(f"Command `{cmd_name}` not found.")
-                except Exception:
-                    return await message.reply(f"Command `{cmd_name}` not found.")
+                    return await status_msg.edit(f"❌ Command `{cmd_query}` not found.")
+                except:
+                    return await message.reply(f"❌ Command `{cmd_query}` not found.")
             
+            # Compose detailed help
             help_text = f"📖 *Help:* `{curr_prefix}{cmd['name']}`\n"
             help_text += f"*Description:* {cmd['description']}\n"
-            if cmd['aliases']:
+            if cmd.get('aliases'):
                 help_text += f"*Aliases:* `{curr_prefix}{f', {curr_prefix}'.join(cmd['aliases'])}`\n"
-            help_text += f"*Category:* {cmd['category']}\n"
-            help_text += f"*Usage:* `{curr_prefix}{cmd['name']} {cmd['usage']}`".strip()
+            help_text += f"*Category:* {cmd.get('category', 'General')}\n"
+            help_text += f"*Usage:* `{curr_prefix}{cmd['name']} {cmd.get('usage', '')}`".strip()
             
             try:
-                if message.from_me:
-                    return await message.edit(help_text)
-                else:
-                    return await message.reply(help_text)
-            except Exception:
+                return await status_msg.edit(help_text)
+            except:
                 return await message.reply(help_text)
 
-        # Main help menu
+        # Get category grouping for main menu
         categories = {}
-        for cmd in COMMANDS_METADATA:
-            cat = cmd['category']
+        # Log count to debug "not showing" issue
+        logger.info(f"Generating help menu for {len(COMMANDS_METADATA)} commands")
+        
+        for cmd_entry in COMMANDS_METADATA:
+            cat = cmd_entry.get('category', 'General')
             if cat not in categories:
                 categories[cat] = []
-            categories[cat].append(cmd['name'])
+            categories[cat].append(cmd_entry['name'])
 
+        # Build Main menu
         help_text = "🚀 *Astra Userbot Menu*\n\n"
-        if not categories:
-            help_text += "No commands found in metadata registry."
-        
         for cat in sorted(categories.keys()):
             help_text += f"*{cat}*\n"
-            cmd_list = [f"{curr_prefix}{c}" for c in sorted(categories[cat])]
-            help_text += f"`{', '.join(cmd_list)}`\n\n"
+            cmds = sorted(categories[cat])
+            help_text += f"`{', '.join([f'{curr_prefix}{c}' for c in cmds])}`\n\n"
         
-        help_text += f"Use `{curr_prefix}help <cmd>` for details."
+        help_text += f"💡 Use `{curr_prefix}help <cmd>` for details."
         
         try:
-            if message.from_me:
-                await message.edit(help_text)
-            else:
-                await message.reply(help_text)
-        except Exception:
+            await status_msg.edit(help_text)
+        except:
             await message.reply(help_text)
 
     except Exception as e:
         logger.error(f"Help command failed: {e}", exc_info=True)
-        try:
-            await message.edit(f"❌ Help Error: {e}")
-        except:
-            await message.reply(f"❌ Help Error: {e}")
+        await smart_reply(message, f"❌ Help Error: {e}")

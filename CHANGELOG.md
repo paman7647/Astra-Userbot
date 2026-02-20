@@ -5,6 +5,16 @@ All notable changes to the **Astra-Userbot** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1b7] - 2026-02-21
+### Added
+- **Engine Sync (v0.0.2b7)**: Full integration with the latest Astra Engine, including the new 3-stage history retrieval strategy.
+- **Improved History Command**: The `.history` and `.fetch` commands now support anchorless execution, defaulting to the latest 10 messages.
+- **Enhanced Debug Visibility**: Bridge logs are now streamed directly to the bot console at INFO level, making it easier to track fetch operations and engine decisions.
+- **Robust Purge Logic**: Improved multi-message deletion reliability during high-latency scenarios.
+### Fixed
+- **History Command Crash**: Resolved a `TypeError` when calling `.history` without replying to a message.
+- **Fetch Count Consistency**: Fixed an issue where `.fetch` would sometimes return fewer messages than requested.
+
 ## [0.0.1b] - 2026-02-20
 
 Welcome to the initial public beta release of the **Astra-Userbot**.

@@ -13,6 +13,7 @@ Retrieves unique identifiers (IDs) for chats and users.
 Essential for configuring permissions and debugging.
 """
 
+import asyncio
 from . import *
 
 @astra_command(
@@ -31,22 +32,52 @@ async def id_handler(client: Client, message: Message):
         chat_id = message.chat_id
         sender_id = message.sender_id
         
-        target_id = sender_id
-        target_name = "You"
-        
-        reply_msg = ""
+        # Resolve Chat Name
+        chat_name = "Unknown"
+        chat_type = "Chat"
+        try:
+            chat_entity = await client.get_entity(chat_id, force=True)
+            chat_name = chat_entity.title
+            if getattr(chat_entity, 'is_group', False):
+                chat_type = "Group"
+        except: pass
 
-        # Handle Reply
+        # Resolve Sender Name
+        sender_name = "You"
+        try:
+            sender_entity = await client.get_entity(sender_id, force=True)
+            if sender_entity.is_me:
+                sender_name = f"You ({sender_entity.push_name or 'Astra User'})"
+            else:
+                sender_name = sender_entity.title
+        except: pass
+
+        reply_info = ""
+        # Handle Quoted Reply
         if message.has_quoted_msg and message.quoted_participant:
-            target_id = message.quoted_participant.user
+            target_jid = message.quoted_participant
             target_name = "Target User"
-            reply_msg = f"👤 **Target ID:** `{target_id}`\n"
+            debug_meta = ""
+            # Small grace period for asynchronous contact resolution to settle
+            await asyncio.sleep(0.8)
+            try:
+                entity = await client.get_entity(target_jid, force=True)
+                target_name = entity.title
+                if entity.push_name:
+                    debug_meta = f" (Pushname: {entity.push_name})"
+                elif target_name == target_jid.user:
+                    debug_meta = " (No name found)"
+            except: pass
+            
+            reply_info = f"\n👤 **Target:** {target_name}{debug_meta}\n🆔 **Target ID:** `{target_jid}`\n"
 
         info_text = (
             "🆔 **Astra Identity Info**\n\n"
-            f"🏠 **Chat ID:** `{chat_id}`\n"
-            f"👤 **Your ID:** `{sender_id}`\n"
-            f"{reply_msg}"
+            f"🏠 **{chat_type}:** {chat_name}\n"
+            f"🆔 **{chat_type} ID:** `{chat_id}`\n\n"
+            f"👤 **Sender:** {sender_name}\n"
+            f"🆔 **Sender ID:** `{sender_id}`\n"
+            f"{reply_info}"
         )
         
         await smart_reply(message, info_text)

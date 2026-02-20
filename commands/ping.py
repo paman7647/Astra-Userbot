@@ -38,7 +38,10 @@ async def ping_handler(client: Client, message: Message):
         latency = round((end_time - start_time) * 1000)
         
         # Final result with clean formatting
-        await status_msg.edit(f"🏓 **Pong!**\n`Latency: {latency}ms`")
+        try:
+            await status_msg.edit(f"🏓 **Pong!**\n`Latency: {latency}ms`")
+        except:
+            await message.reply(f"🏓 **Pong!**\n`Latency: {latency}ms`")
 
     except Exception as e:
         await smart_reply(message, " ⚠️ Latency check failed.")

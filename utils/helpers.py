@@ -109,6 +109,18 @@ async def smart_reply(message: Message, content: str, **kwargs):
         # Fallback to standard reply if edit fails (e.g., message already deleted or too old).
         return await message.reply(content, **kwargs)
 
+def get_progress_bar(pct: float, length: int = 15) -> str:
+    """
+    Generates a visual progress bar string.
+    Example: [▰▰▰▱▱▱▱▱▱▱] 30.0%
+    """
+    try:
+        filled = int(length * pct / 100)
+        bar = "▰" * filled + "▱" * (length - filled)
+        return f"[{bar}] {pct:.1f}%"
+    except:
+        return f"[░░░░░░░░░░░░░] {pct}%"
+
 async def report_error(client, exc: Exception, context: str = ""):
     """
     Captures and transmits diagnostic information (tracebacks) to the bot owner.

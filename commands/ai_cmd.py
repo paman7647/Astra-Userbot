@@ -6,6 +6,8 @@
 # See LICENSE file in the project root for full license text.
 # -----------------------------------------------------------
 
+import os
+import time
 from . import *
 
 @astra_command(
@@ -47,9 +49,14 @@ async def ai_handler(client: Client, message: Message):
         response = await asyncio.to_thread(gen_client.models.generate_content, model='gemini-3-flash-preview', contents=prompt)
 
         if response and response.text:
-            await status_msg.edit(response.text)
+            try:
+                await status_msg.edit(response.text)
+            except:
+                await message.reply(response.text)
         else:
-            await status_msg.edit(" AI returned an empty response.")
+            try:
+                await status_msg.edit(" AI returned an empty response.")
+            except: pass
     except Exception as e:
         await smart_reply(message, f" ❌ Error: {str(e)}")
         await report_error(client, e, context='Command ai failed')

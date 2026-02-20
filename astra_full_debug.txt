@@ -1,2 +1,0 @@
-2026-02-20 02:47:16,310 - [INFO] - Astra.SessionStore - SessionStore opened: /Users/paman7647/ASTRAUB/astra_userbot_test/.astra_sessions/userbot/astra_cache.db
-2026-02-20 02:47:16,310 - [DEBUG] - Astra.Events - Registered listener 'on_ready' for event 'ready'

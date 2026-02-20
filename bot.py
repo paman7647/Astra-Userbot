@@ -11,9 +11,6 @@ Astra Userbot Core
 ------------------
 Main entry point for the Astra Userbot. Handles initialization, 
 plugin loading, and event loop management.
-
-License: MIT
-Copyright (c) 2026 Aman Kumar Pandey
 """
 
 import asyncio
@@ -23,19 +20,18 @@ import sys
 import signal
 from typing import Optional
 
-# Initialization
-# --------------
+# Setup Script Directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, "/Users/paman7647/Downloads/whatsapp-web.js-main")
+
+# Developer Mode: Use local Astra engine from Downloads
+
+LOCAL_ENGINE_PATH = "/Users/paman7647/Downloads/whatsapp-web.js-main"
+if os.path.exists(LOCAL_ENGINE_PATH):
+    sys.path.insert(0, LOCAL_ENGINE_PATH)
 
 from astra import Client, Filters
 
 # Environment & Logging Setup
-# --------------------------
-
-# Logging setup is critical for production visibility.
-# Logging setup is critical for production visibility.
-# We configure a specific formatter and handlers to capture all levels.
 log_formatter = logging.Formatter('%(asctime)s - [%(levelname)s] - %(name)s - %(message)s')
 
 file_handler = logging.FileHandler(os.path.join(SCRIPT_DIR, "astra_full_debug.txt"), mode='w')
@@ -47,7 +43,7 @@ stream_handler.setLevel(logging.INFO)
 stream_handler.setFormatter(log_formatter)
 
 logging.basicConfig(
-    level=logging.DEBUG, # Set root logger to DEBUG to allow all logs through
+    level=logging.DEBUG,
     handlers=[file_handler, stream_handler]
 )
 
@@ -56,14 +52,38 @@ logger = logging.getLogger("AstraBot")
 # Initial configuration load
 from config import config
 
+# Bridge Patch for Web Dashboard
+def patch_authenticator(client_instance):
+    """
+    Redirects QR and Pairing code data to files for the web dashboard (render.py).
+    """
+    auth = client_instance.authenticator
+    original_qr = auth._display_qr
+    original_code = auth._display_code
+    
+    def patched_qr(data):
+        with open(os.path.join(SCRIPT_DIR, "qr_data.txt"), "w") as f:
+            f.write(data)
+        original_qr(data)
+        
+    def patched_code(code):
+        with open(os.path.join(SCRIPT_DIR, "pairing_code.txt"), "w") as f:
+            f.write(code)
+        original_code(code)
+    
+    auth._display_qr = patched_qr
+    auth._display_code = patched_code
+    logger.info("✅ Authenticator patched for Web Dashboard support.")
+
 # Global Client Instance
-# ---------------------
-# We initialize the client using settings from the environment.
 client = Client(
     session_id=os.getenv("ASTRA_SESSION_ID", "userbot"),
     phone=os.getenv("PHONE_NUMBER"),
     headless=os.getenv("ASTRA_HEADLESS", "True").lower() == "true"
 )
+
+# Apply patch immediately
+patch_authenticator(client)
 
 # Event Handlers
 # --------------
@@ -88,7 +108,6 @@ async def on_ready(_):
         await state.initialize()
         
         # 2. Dynamic Plugin Discovery
-        # We scan the commands directory for all valid python plugins.
         commands_dir = os.path.join(SCRIPT_DIR, "commands")
         if os.path.exists(commands_dir):
             from utils.plugin_utils import load_plugin
@@ -104,7 +123,6 @@ async def on_ready(_):
             print(f"📦 Modules: {len(loaded_plugins)} loaded.")
 
         # 3. Connectivity Notification
-        # Send a brief status update to the self-chat.
         try:
             target_id = user.id.serialized if hasattr(user.id, "serialized") else str(user.id)
             msg = await client.send_message(
@@ -113,7 +131,7 @@ async def on_ready(_):
             )
             await msg.react("✅")
         except Exception as notify_err:
-             logger.debug(f"Self-notification suppressed: {notify_err}")
+             logger.debug(f"Self-notification failed: {notify_err}")
 
     except Exception as e:
         logger.error(f"Critical error during startup sequence: {e}", exc_info=True)
@@ -137,17 +155,6 @@ async def shutdown(sig: Optional[signal.Signals] = None):
     sys.exit(0)
 
 
-import os
-import subprocess
-from aiohttp import web
-
-async def health_check(request):
-    """Simple health check endpoint for Render to prevent the web service from sleeping/failing."""
-    return web.Response(text="Astra Userbot Web Environment is healthy and active.", status=200)
-
-app = web.Application()
-app.router.add_get('/', health_check)
-app.router.add_get('/health', health_check)
 async def main():
     """Main runner for the Astra Userbot."""
     # Register OS signal handlers for graceful shutdown
@@ -156,10 +163,8 @@ async def main():
         loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s)))
 
     # Start the client engine
-    
     async with client:
         logger.info("Astra Engine active. Listening for events...")
-        await web.run_app(app, host='0.0.0.0', port=10000)
         await client.run_forever()
 
 if __name__ == "__main__":

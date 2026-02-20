@@ -57,7 +57,9 @@ async def update_cmd(client: Client, message: Message):
         # Check if it's a git repo
         is_repo = os.path.isdir(".git")
         if not is_repo:
-            await status_msg.edit(f"📦 *Initializing git repository and linking to {repo_url}...*")
+            try:
+                await status_msg.edit(f"📦 *Initializing git repository and linking to {repo_url}...*")
+            except: pass
             process = await asyncio.create_subprocess_exec(
                 'git', 'init',
                 stdout=asyncio.subprocess.PIPE,
@@ -85,14 +87,48 @@ async def update_cmd(client: Client, message: Message):
         
         if process.returncode == 0:
             if "Already up to date" in stdout_text:
-                await status_msg.edit(f"✅ *Astra Userbot is already up to date with {repo_url}.*")
+                try:
+                    await status_msg.edit(f"✅ *Astra Userbot is already up to date with {repo_url}.*")
+                except:
+                    await message.reply(f"✅ *Astra Userbot is already up to date with {repo_url}.*")
             else:
                 # Limit the log so it doesn't overflow the message
                 update_log = stdout_text[:1000]
-                await status_msg.edit(f"✅ *Update successful!*\n\n```\n{update_log}\n```\n\n*Restarting to apply changes...*")
+                try:
+                    await status_msg.edit(f"✅ *Update successful!*\n\n```\n{update_log}\n```\n\n*Restarting to apply changes...*")
+                except:
+                    await message.reply(f"✅ *Update successful!*\n\n```\n{update_log}\n```\n\n*Restarting to apply changes...*")
                 time.sleep(1.5)
                 os.execv(sys.executable, [sys.executable] + sys.argv)
         else:
-            await status_msg.edit(f"❌ *Update failed!*\n\n```\n{stderr_text}\n```")
+            try:
+                await status_msg.edit(f"❌ *Update failed!*\n\n```\n{stderr_text}\n```")
+            except:
+                await message.reply(f"❌ *Update failed!*\n\n```\n{stderr_text}\n```")
     except Exception as e:
-        await status_msg.edit(f"❌ *Update Error:* {str(e)}")
+        try:
+            await status_msg.edit(f"❌ *Update Error:* {str(e)}")
+        except:
+            await message.reply(f"❌ *Update Error:* {str(e)}")
+
+@astra_command(
+    name="reload",
+    description="Hot-reloads all plugins and project modules.",
+    category="System",
+    owner_only=True
+)
+async def reload_cmd(client: Client, message: Message):
+    """Hot-reloads all plugins and project modules."""
+    status_msg = await smart_reply(message, "⏳ *Hot-reloading Astra Userbot...*")
+    
+    try:
+        from utils.plugin_utils import reload_all_plugins
+        count = reload_all_plugins(client)
+        
+        await status_msg.edit(
+            f"✅ **Reload Successful!**\n"
+            f"📦 **Modules:** {count} plugins resynced.\n"
+            f"🕒 **Time:** {time.strftime('%H:%M:%S')}"
+        )
+    except Exception as e:
+        await report_error(client, e, context='Reload command failure')

@@ -30,13 +30,16 @@ async function download() {
         '--no-playlist',
         '--geo-bypass',
         '--no-check-certificates',
-        '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        '--add-header', 'Referer:https://www.instagram.com/',
+        '--add-header', 'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        '--add-header', 'Accept-Language:en-US,en;q=0.9',
+        '--extractor-args', 'instagram:allow_direct_url',
         '-o', outputTmpl
     ];
 
-    if (cookies_file) {
+    if (cookies_file && cookies_file !== 'None' && cookies_file !== '') {
         ytArgs.push('--cookies', cookies_file);
-    } else if (cookies_browser) {
+    } else if (cookies_browser && cookies_browser !== 'None' && cookies_browser !== '') {
         ytArgs.push('--cookies-from-browser', cookies_browser);
     }
 
@@ -44,16 +47,47 @@ async function download() {
         ytArgs.push('--extract-audio', '--audio-format', 'mp3', '--audio-quality', '0');
         ytArgs.push('-f', 'ba/b');
     } else {
-        // More robust format: try to get mp4 specifically, fallback to best but limited to 720p for fast uploads
-        ytArgs.push('-f', 'bestvideo[height<=720][ext=mp4]+bestaudio[m4a]/best[height<=720][ext=mp4]/best[ext=mp4]/best');
+        // Force H.264/MP4 for maximum compatibility across all devices
+        ytArgs.push('-f', 'bestvideo[vcodec^=avc1][height<=720]+bestaudio[ext=m4a]/best[vcodec^=avc1][height<=720]/best[ext=mp4]/best');
+        ytArgs.push('--merge-output-format', 'mp4');
     }
 
     ytArgs.push(url);
 
-    const cp = spawn('/opt/homebrew/bin/yt-dlp', ytArgs);
+    // 1. Get Metadata First
+    const metaArgs = ['-j', '--simulate', '--no-playlist', url];
+    if (cookies_file && cookies_file !== 'None' && cookies_file !== '') metaArgs.push('--cookies', cookies_file);
+    else if (cookies_browser && cookies_browser !== 'None' && cookies_browser !== '') metaArgs.push('--cookies-from-browser', cookies_browser);
+
+    const metaCp = spawn('python3', ['-m', 'yt_dlp', ...metaArgs]);
+    let metaData = '';
+    metaCp.stdout.on('data', (d) => metaData += d.toString());
+
+    await new Promise((resolve) => metaCp.on('close', resolve));
+
+    let info = {};
+    try {
+        info = JSON.parse(metaData);
+        // Direct output for Python to capture metadata immediately
+        process.stdout.write(`METADATA:${JSON.stringify({
+            title: info.title || 'Unknown Title',
+            platform: info.extractor_key || 'Unknown',
+            uploader: info.uploader || info.channel || '',
+            url: info.webpage_url || url
+        })}\n`);
+    } catch (e) {
+        process.stdout.write(`METADATA:{"title":"Media Content","platform":"Direct","url":"${url}"}\n`);
+    }
+
+    // 2. Perform Download
+    const cp = spawn('python3', ['-m', 'yt_dlp', ...ytArgs]);
+
+    cp.stdout.on('data', (data) => {
+        // Forward yt-dlp progress to Python
+        process.stdout.write(data);
+    });
 
     cp.stderr.on('data', (data) => {
-        // Log errors to stderr of this process
         process.stderr.write(data);
     });
 
@@ -62,16 +96,14 @@ async function download() {
             process.exit(code);
         }
 
-        // Find the downloaded file
         const files = fs.readdirSync(tempDir).filter(f => f.startsWith(`jsdl_${timestamp}_`));
         if (files.length === 0) {
             console.error(JSON.stringify({ error: 'No file found after download' }));
             process.exit(1);
         }
 
-        // Output results as JSON for Python to parse
         const results = files.map(f => path.join(tempDir, f));
-        console.log(JSON.stringify({ success: true, files: results }));
+        process.stdout.write(`SUCCESS:${JSON.stringify({ files: results })}\n`);
     });
 }
 

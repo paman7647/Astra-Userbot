@@ -17,6 +17,7 @@ A suite of tools for developers and power users.
 
 import aiohttp
 import base64
+import time
 from . import *
 
 # --- PASTEBIN UTILITY ---
@@ -54,15 +55,24 @@ async def paste_handler(client: Client, message: Message):
             async with session.post(url, data=payload) as resp:
                 if resp.status == 200:
                     paste_url = await resp.text()
-                    paste_url = paste_url.strip().replace('"', "")
                     
-                    await status_msg.edit(
-                        f"🗒️ **Paste Uploaded!**\n\n"
-                        f"🔗 **Link:** [View Paste]({paste_url})\n"
-                        f"⏳ **Expires:** 7 days"
-                    )
+                    try:
+                        await status_msg.edit(
+                            f"🗒️ **Paste Uploaded!**\n\n"
+                            f"🔗 **Link:** [View Paste]({paste_url})\n"
+                            f"⏳ **Expires:** 7 days"
+                        )
+                    except:
+                        await message.reply(
+                            f"🗒️ **Paste Uploaded!**\n\n"
+                            f"🔗 **Link:** [View Paste]({paste_url})\n"
+                            f"⏳ **Expires:** 7 days"
+                        )
                 else:
-                    await status_msg.edit(" ⚠️ Upload failed. dpaste.org returned error.")
+                    try:
+                        await status_msg.edit(" ⚠️ Upload failed. dpaste.org returned error.")
+                    except:
+                        await message.reply(" ⚠️ Upload failed. dpaste.org returned error.")
 
     except Exception as e:
         await report_error(client, e, context='Paste command failure')
@@ -117,7 +127,10 @@ async def carbon_handler(client: Client, message: Message):
                     await client.send_media(message.chat_id, media, caption="💻 **Code Snippet**")
                     await status_msg.delete()
                 else:
-                    await status_msg.edit(" ⚠️ Failed to generate image.")
+                    try:
+                        await status_msg.edit(" ⚠️ Failed to generate image.")
+                    except:
+                        await message.reply(" ⚠️ Failed to generate image.")
 
     except Exception as e:
         await report_error(client, e, context='Carbon command failure')
@@ -185,11 +198,25 @@ async def quotly_handler(client: Client, message: Message):
                         sticker_buffer = base64.b64decode(data['result']['image'])
                         b64_sticker = base64.b64encode(sticker_buffer).decode('utf-8')
                         
-                        await client.send_sticker(message.chat_id, b64_sticker, reply_to=quoted.id)
+                        media_pkg = {
+                            "mimetype": "image/webp",
+                            "data": b64_sticker,
+                            "filename": "quote.webp",
+                            "type": "sticker"
+                        }
+                        
+                        await client.send_media(
+                            message.chat_id, 
+                            media_pkg, 
+                            reply_to=quoted.id
+                        )
                         await status_msg.delete()
                         return
                     
-        await status_msg.edit(" ⚠️ Failed to create quote.")
+        try:
+            await status_msg.edit(" ⚠️ Failed to create quote.")
+        except:
+            await message.reply(" ⚠️ Failed to create quote.")
 
     except Exception as e:
         await report_error(client, e, context='Quotly command failure')

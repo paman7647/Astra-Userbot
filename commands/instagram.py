@@ -10,9 +10,12 @@ import asyncio
 import os
 import time
 import json
+import re
 import shutil
+import random
 from config import config
 from . import *
+from utils.helpers import get_progress_bar
 
 @astra_command(
     name="instagram",
@@ -23,84 +26,148 @@ from . import *
     owner_only=False
 )
 async def instagram_handler(client: Client, message: Message):
-    """Download Instagram post/reel"""
+    """Download Instagram post/reel with live progress"""
     try:
         args_list = extract_args(message)
-        
         if not args_list:
             return await smart_reply(message, " ❌ Please provide an Instagram URL.")
 
         url = args_list[0]
         
-        # Ensure yt-dlp is available
-        if not shutil.which("yt-dlp") and not shutil.which("youtube-dl"):
-            return await smart_reply(message, "❌ `yt-dlp` not found on the host. Install yt-dlp or youtube-dl to use this command.")
+        # Robust mode detection
+        args_lower = [arg.lower() for arg in args_list]
+        mode = "audio" if "audio" in args_lower or "mp3" in args_lower else "video"
 
-        status_msg = await smart_reply(message, " ⏳ *Processing Instagram media...*")
+        status_msg = await smart_reply(message, f" 🔍 *Initializing Instagram Engine...*")
 
-        temp_dir = os.path.join(os.getcwd(), "temp")
-        os.makedirs(temp_dir, exist_ok=True)
-
-        timestamp = int(time.time())
-        
-        # Use Node.js bridge to bypass Python 3.14 environment issues
-        node_bin = "/opt/homebrew/bin/node"
+        # Bridge Execution
         bridge_script = os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils", "js_downloader.js")
-
         cookies_file = getattr(config, 'YOUTUBE_COOKIES_FILE', '') or ''
         cookies_browser = getattr(config, 'YOUTUBE_COOKIES_FROM_BROWSER', '') or ''
 
-        bridge_cmd = [
-            node_bin, bridge_script,
-            url, "video", 
-            cookies_file, cookies_browser
-        ]
-        
         process = await asyncio.create_subprocess_exec(
-            *bridge_cmd,
+            "node", bridge_script,
+            url, mode, 
+            cookies_file, cookies_browser,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
 
-        stdout_data, stderr_data = await process.communicate()
+        metadata = {"title": "Instagram Post", "platform": "Instagram", "uploader": "Unknown", "url": url}
+        files = []
+        last_update_time = 0
+
+        # 1. Read progress from stdout
+        while True:
+            line = await process.stdout.readline()
+            if not line: break
+            line_str = line.decode('utf-8', errors='ignore').strip()
+            
+            if line_str.startswith("METADATA:"):
+                metadata.update(json.loads(line_str.replace("METADATA:", "")))
+                try:
+                    await status_msg.edit(
+                        f"✨ *{metadata['title']}*\n"
+                        f"🌐 *Platform:* {metadata['platform']}\n"
+                        f"📂 *Mode:* {mode.capitalize()}\n\n"
+                        f"⏳ *Accessing content...*"
+                    )
+                except: pass
+                continue
+
+            if "[download]" in line_str and "%" in line_str:
+                match = re.search(r"(\d+\.\d+)% of\s+([\d\.]+\w+)\s+at\s+([\d\.]+\w+/s)\s+ETA\s+(\d+:\d+)", line_str)
+                if match:
+                    pct, size, speed, eta = match.groups()
+                    pct = float(pct)
+                    current_time = time.time()
+                    if current_time - last_update_time > 2.0 or pct >= 100:
+                        bar = get_progress_bar(pct)
+                        try:
+                            await status_msg.edit(
+                                f"✨ *{metadata['title']}*\n"
+                                f"🌐 *Platform:* {metadata['platform']}\n\n"
+                                f"📥 *Downloading:* {bar}\n"
+                                f"📋 *Size:* `{size}`\n"
+                                f"⚡ *Speed:* `{speed}`\n"
+                                f"⏳ *Remaining:* `{eta}`"
+                            )
+                            last_update_time = current_time
+                        except: pass
+
+            if line_str.startswith("SUCCESS:"):
+                res = json.loads(line_str.replace("SUCCESS:", ""))
+                files = res.get('files', [])
+
+        await process.wait()
 
         if process.returncode != 0:
-            err_text = stderr_data.decode(errors='ignore')[:300]
-            return await status_msg.edit(f"❌ Instagram download failed via JS Bridge:\n```{err_text}```")
+            stderr = await process.stderr.read()
+            err_text = stderr.decode(errors='ignore')[:300]
+            return await status_msg.edit(f"❌ Instagram Core Error:\n```{err_text}```")
 
-        try:
-            res = json.loads(stdout_data.decode())
-            if not res.get('success'):
-                raise Exception(res.get('error', 'Unknown bridge error'))
-            files_found = res.get('files', [])
-        except Exception as jerr:
-            return await status_msg.edit(f" ❌ Bridge output error: {str(jerr)}")
-
-        if not files_found:
+        if not files:
             return await status_msg.edit(" ❌ Media not found or private account.")
 
-        # Sort files to maintain original order (important for carousels)
-        files_found.sort()
+        file_path = files[0]
+        file_size = os.path.getsize(file_path)
+        file_size_mb = file_size / (1024 * 1024)
+        start_upload_time = time.time()
+        upload_last_update = 0
+        
+        # Enhanced Caption
+        caption = (
+            f"✨ *{metadata['title']}*\n"
+            f"👤 *Author:* {metadata.get('uploader', 'Unknown')}\n"
+            f"🔗 *Source:* {metadata.get('url', url)}\n\n"
+            f"🚀 *Powered by Astra UserBot*"
+        )
 
-        await status_msg.edit(f" 📤 *Uploading {len(files_found)} media item(s)...*")
+        async def on_upload_progress(current, total):
+            nonlocal upload_last_update
+            now = time.time()
+            if now - upload_last_update < 2.0: return
+            
+            pct = (current / total) * 100
+            bar = get_progress_bar(pct)
+            
+            elapsed = now - start_upload_time
+            if elapsed > 0:
+                sent_mb = (current / total) * file_size_mb
+                speed = sent_mb / elapsed
+                speed_text = f"{speed:.2f} MiB/s"
+            else:
+                speed_text = "Checking..."
 
-        for file_path in files_found:
             try:
-                # send_file uses SDK's new ffprobe dimensional extraction
-                await client.send_file(message.chat_id, file_path, caption="✨ *Instagram Media*")
-            except Exception as send_exc:
-                # fallback: send as document explicitly
-                try:
-                    await client.send_file(message.chat_id, file_path, caption="✨ *Instagram Media*", document=True)
-                except Exception as final_exc:
-                    await status_msg.edit(f" ❌ Upload failed for one or more items: {str(final_exc)}")
-                    await report_error(client, final_exc, context=f'Instagram upload failed for {url}')
-    
-            # Cleanup individual file as we go
-            if os.path.exists(file_path):
-                os.remove(file_path)
+                await status_msg.edit(
+                    f"✨ *{metadata['title']}*\n"
+                    f"🌐 *Platform:* {metadata['platform']}\n\n"
+                    f"📤 *Uploading:* {bar}\n"
+                    f"⚡ *Speed:* `{speed_text}`"
+                )
+                upload_last_update = now
+            except: pass
 
-        await status_msg.delete()
+        try:
+            if mode == "audio":
+                await client.send_audio(message.chat_id, file_path, reply_to=message.id, progress=on_upload_progress)
+            else:
+                await client.send_video(message.chat_id, file_path, caption=caption, reply_to=message.id, progress=on_upload_progress)
+            
+            await status_msg.delete()
+        except Exception as e:
+            try:
+                await status_msg.edit(f"✨ *{metadata['title']}*\n🔄 *Finalizing delivery...*")
+                await client.send_file(message.chat_id, file_path, caption=caption, document=True, reply_to=message.id)
+                await status_msg.delete()
+            except Exception as final_exc:
+                try: await status_msg.edit(f" ❌ Delivery failed: {str(final_exc)}")
+                except: await message.reply(f" ❌ Delivery failed: {str(final_exc)}")
+
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
     except Exception as e:
-        await smart_reply(message, f" ❌ Error: {str(e)}")
-        await report_error(client, e, context='Command instagram failed')
+        await smart_reply(message, f" ❌ System Error: {str(e)}")
+        await report_error(client, e, context='Instagram command root failure')

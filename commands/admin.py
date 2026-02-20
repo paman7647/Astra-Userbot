@@ -7,6 +7,8 @@
 # -----------------------------------------------------------
 
 from . import *
+import time
+from utils.plugin_utils import load_plugin, unload_plugin, PLUGIN_HANDLES
 
 @astra_command(
     name="admin",
@@ -86,7 +88,10 @@ async def admin_handler(client: Client, message: Message):
             status = await smart_reply(message, " 📢 Tagging everyone...")
             info = await client.group.get_info(message.chat_id)
             if not info or not info.participants: 
-                return await status.edit(" Failed to fetch group info.")
+                try:
+                    return await status.edit(" Failed to fetch group info.")
+                except:
+                    return await message.reply(" Failed to fetch group info.")
             
             text = " 📢 *Everyone Check!* \n\n"
             mentions = []
@@ -149,9 +154,13 @@ async def reload_handler(client: Client, message: Message):
                      failed.append(plugin.split('.')[-1])
              
              if failed:
-                 await status_msg.edit(f" ⚠️ Reloaded {count} plugins.\nFailed: {', '.join(failed)}")
+                 try:
+                     await status_msg.edit(f" ⚠️ Reloaded {count} plugins.\nFailed: {', '.join(failed)}")
+                 except: pass
              else:
-                 await status_msg.edit(f" ✅ Successfully reloaded {count} plugins!")
+                 try:
+                     await status_msg.edit(f" ✅ Successfully reloaded {count} plugins!")
+                 except: pass
              return
 
         # Single Plugin Logic
@@ -170,9 +179,13 @@ async def reload_handler(client: Client, message: Message):
         # 3. specific unload/load
         unload_plugin(client, plugin_name)
         if load_plugin(client, plugin_name):
-            await status_msg.edit(f" ✅ Plugin `{target}` reloaded successfully!")
+            try:
+                await status_msg.edit(f" ✅ Plugin `{target}` reloaded successfully!")
+            except: pass
         else:
-            await status_msg.edit(f" ❌ Failed to reload `{target}`. Check logs.")
+            try:
+                await status_msg.edit(f" ❌ Failed to reload `{target}`. Check logs.")
+            except: pass
 
     except Exception as e:
          await smart_reply(message, f" ❌ Reload Error: {e}")

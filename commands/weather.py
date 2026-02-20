@@ -67,7 +67,10 @@ async def weather_handler(client: Client, message: Message):
                     return await status_msg.delete()
 
             # Fallback to text only
-            await status_msg.edit(weather_report)
+            try:
+                await status_msg.edit(weather_report)
+            except:
+                await message.reply(weather_report)
 
     except Exception as e:
         await smart_reply(message, " ⚠️ Weather lookup failed.")
