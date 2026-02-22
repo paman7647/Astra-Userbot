@@ -77,7 +77,7 @@ def patch_authenticator(client_instance):
 client = Client(
     session_id=os.getenv("ASTRA_SESSION_ID", "userbot"),
     phone=os.getenv("PHONE_NUMBER"),
-    headless=os.getenv("ASTRA_HEADLESS", "False").lower() == "true"
+    headless=os.getenv("ASTRA_HEADLESS", "True").lower() == "true"
 )
 
 # Apply patch immediately
