@@ -24,7 +24,7 @@ from typing import Optional
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-from astra import Client, Filters
+from astra import Client, Filters, Message
 from utils.logger import setup_logging, Colors
 
 # 1. Initialize Modern Logging
