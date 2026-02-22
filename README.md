@@ -34,7 +34,7 @@ Astra Userbot is powered by the Astra Engine Core, which handles:
 -   Lifecycle management
 
 Core Library Repository:\
-https://github.com/paman7674/astra
+[![Astra Engine](https://img.shields.io/badge/Astra%20Engine-GitHub-black?logo=github)](https://github.com/paman7674/astra)
 
 ------------------------------------------------------------------------
 
@@ -109,7 +109,6 @@ cp .env.example .env
 ### Initial Authentication (QR Login)
 
 ``` bash
-export ASTRA_HEADLESS="false"
 python3 bot.py
 ```
 
