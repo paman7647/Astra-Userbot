@@ -23,7 +23,6 @@ from typing import Optional
 # Setup Script Directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Developer Mode: Use local Astra engine from Downloads
 
 from astra import Client, Filters
 from utils.logger import setup_logging, Colors
