@@ -22,7 +22,7 @@ from utils.helpers import get_progress_bar
     description="Download Pinterest media",
     category="Media",
     aliases=["pin"],
-    usage="<url>",
+    usage="<url> (Pinterest media link)",
     owner_only=False
 )
 async def pinterest_handler(client: Client, message: Message):
@@ -48,11 +48,11 @@ async def pinterest_handler(client: Client, message: Message):
             stderr=asyncio.subprocess.PIPE
         )
 
-        metadata = {"title": "Pinterest Post", "platform": "Pinterest", "uploader": "Unknown", "url": url}
+        metadata = {"title": "Pinterest Media", "platform": "Pinterest", "uploader": "Unknown", "url": url}
         files = []
         last_update_time = 0
 
-        # Read output stream
+        # 1. Read progress from stdout
         while True:
             line = await process.stdout.readline()
             if not line: break
@@ -60,13 +60,12 @@ async def pinterest_handler(client: Client, message: Message):
             
             if line_str.startswith("METADATA:"):
                 metadata.update(json.loads(line_str.replace("METADATA:", "")))
-                try:
-                    await status_msg.edit(
-                        f"✨ *{metadata['title']}*\n"
-                        f"🌐 *Platform:* {metadata['platform']}\n\n"
-                        f"⏳ *Accessing content...*"
-                    )
-                except: pass
+                time.sleep(0.5)
+                await status_msg.edit(
+                    f"✨ *{metadata['title']}*\n"
+                    f"🌐 *Platform:* {metadata['platform']}\n\n"
+                    f"⏳ *Accessing content...*"
+                )
                 continue
 
             if "[download]" in line_str and "%" in line_str:
@@ -77,17 +76,15 @@ async def pinterest_handler(client: Client, message: Message):
                     current_time = time.time()
                     if current_time - last_update_time > 2.0 or pct >= 100:
                         bar = get_progress_bar(pct)
-                        try:
-                            await status_msg.edit(
-                                f"✨ *{metadata['title']}*\n"
-                                f"🌐 *Platform:* {metadata['platform']}\n\n"
-                                f"📥 *Downloading:* {bar}\n"
-                                f"📋 *Size:* `{size}`\n"
-                                f"⚡ *Speed:* `{speed}`\n"
-                                f"⏳ *Remaining:* `{eta}`"
-                            )
-                            last_update_time = current_time
-                        except: pass
+                        time.sleep(0.5)
+                        await status_msg.edit(
+                            f"✨ *{metadata['title']}*\n"
+                            f"🌐 *Platform:* {metadata['platform']}\n\n"
+                            f"📥 *Downloading:* {bar}\n"
+                            f"📋 *Size:* `{size}`\n"
+                            f"⏳ *Remaining:* `{eta}`"
+                        )
+                        last_update_time = current_time
 
             if line_str.startswith("SUCCESS:"):
                 res = json.loads(line_str.replace("SUCCESS:", ""))
@@ -98,9 +95,11 @@ async def pinterest_handler(client: Client, message: Message):
         if process.returncode != 0:
             stderr = await process.stderr.read()
             err_text = stderr.decode(errors='ignore')[:300]
+            time.sleep(0.5)
             return await status_msg.edit(f"❌ Pinterest Core Error:\n```{err_text}```")
 
         if not files:
+            time.sleep(0.5)
             return await status_msg.edit(" ❌ Link invalid or media not found.")
 
         file_path = files[0]
@@ -133,28 +132,22 @@ async def pinterest_handler(client: Client, message: Message):
             else:
                 speed_text = "Checking..."
 
-            try:
-                await status_msg.edit(
-                    f"✨ *{metadata['title']}*\n"
-                    f"🌐 *Platform:* {metadata['platform']}\n\n"
-                    f"📤 *Uploading:* {bar}\n"
-                    f"⚡ *Speed:* `{speed_text}`"
-                )
-                upload_last_update = now
-            except: pass
+            time.sleep(0.5)
+            await status_msg.edit(
+                f"✨ *{metadata['title']}*\n"
+                f"🌐 *Platform:* {metadata['platform']}\n\n"
+                f"📤 *Uploading:* {bar}\n"
+                f"⚡ *Speed:* `{speed_text}`"
+            )
+            upload_last_update = now
 
         try:
-            # Handle as file to preserve Pinterest quality/type
-            await client.send_file(message.chat_id, file_path, caption=caption, reply_to=message.id, progress=on_upload_progress)
+            await client.send_video(message.chat_id, file_path, caption=caption, reply_to=message.id, progress=on_upload_progress)
             await status_msg.delete()
         except Exception as e:
-            try:
-                await status_msg.edit(f"✨ *{metadata['title']}*\n🔄 *Finalizing delivery...*")
-                await client.send_file(message.chat_id, file_path, caption=caption, document=True, reply_to=message.id)
-                await status_msg.delete()
-            except Exception as final_exc:
-                try: await status_msg.edit(f" ❌ Delivery failed: {str(final_exc)}")
-                except: await message.reply(f" ❌ Delivery failed: {str(final_exc)}")
+            time.sleep(0.5)
+            await status_msg.edit(f" ❌ Delivery failed: {str(e)}")
+            await report_error(client, e, context='Pinterest command root failure')
 
         if os.path.exists(file_path): os.remove(file_path)
 

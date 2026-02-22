@@ -13,7 +13,7 @@ from . import *
     description="Manage your notes/snippets.",
     category="Utility",
     aliases=["note", "save", "get"],
-    usage="save <keyword> <content> | get <keyword> | del <keyword> | list",
+    usage="save <keyword> <content> | get <keyword> | del <keyword> | list (ex: save note1 hello)",
     owner_only=True
 )
 async def notes_handler(client: Client, message: Message):

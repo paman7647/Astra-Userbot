@@ -10,7 +10,7 @@
 
 from astra import Client, Filters
 from astra.models import Message, MessageType
-from utils.helpers import smart_reply, report_error
+from utils.helpers import smart_reply, report_error, get_contact_name
 from utils.plugin_utils import (
     astra_command, 
     authorized_filter, 

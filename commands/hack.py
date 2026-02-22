@@ -23,7 +23,7 @@ from . import *
     description="Simulate a hacking attack on a user or chat.",
     category="Fun",
     aliases=["hacker"],
-    usage="<target>",
+    usage="<target> (e.g. @user or number)",
     is_public=True
 )
 async def hack_handler(client: Client, message: Message):
@@ -45,18 +45,16 @@ async def hack_handler(client: Client, message: Message):
             else:
                 target_name = input_target
         elif message.has_quoted_msg:
-            if message.quoted_participant:
-                target_jid = message.quoted_participant
-                target_name = f"@{message.quoted_participant.user}"
+            if message.quoted and message.quoted.sender:
+                target_jid = message.quoted.sender
+                target_name = f"@{message.quoted.sender.user}"
             else:
                 target_name = "Current Chat"
 
         # Resolve real name if JID available
         if target_jid:
             try:
-                entity = await client.get_entity(target_jid)
-                if entity:
-                    target_name = entity.title
+                target_name = await get_contact_name(client, target_jid)
             except:
                 pass
 
@@ -84,11 +82,12 @@ async def hack_handler(client: Client, message: Message):
         ]
 
         for step in steps:
-            await asyncio.sleep(random.uniform(0.7, 1.5))
+            # Removed delay
+            time.sleep(0.5)  # Short pause for effect
             try:
-                await status_msg.edit(step)
-            except:
-                break
+                await status_msg.edit(f"💀 **Hack in progress:** {step}")
+            except Exception:
+                pass
 
     except Exception as e:
         await report_error(client, e, context='Hack command failure')

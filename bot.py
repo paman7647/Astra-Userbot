@@ -25,32 +25,31 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Developer Mode: Use local Astra engine from Downloads
 
-LOCAL_ENGINE_PATH = "/Users/paman7647/Downloads/whatsapp-web.js-main"
-if os.path.exists(LOCAL_ENGINE_PATH):
-    sys.path.insert(0, LOCAL_ENGINE_PATH)
-
 from astra import Client, Filters
+from utils.logger import setup_logging, Colors
 
-# Environment & Logging Setup
-log_formatter = logging.Formatter('%(asctime)s - [%(levelname)s] - %(name)s - %(message)s')
-
-file_handler = logging.FileHandler(os.path.join(SCRIPT_DIR, "astra_full_debug.txt"), mode='w')
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(log_formatter)
-
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setLevel(logging.INFO)
-stream_handler.setFormatter(log_formatter)
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    handlers=[file_handler, stream_handler]
-)
-
+# 1. Initialize Modern Logging
+setup_logging(SCRIPT_DIR)
 logger = logging.getLogger("AstraBot")
 
 # Initial configuration load
 from config import config
+
+def print_banner():
+    """Renders a futuristic, minimalist branding banner."""
+    import socket
+    ip = "127.0.0.1"
+    try: ip = socket.gethostbyname(socket.gethostname())
+    except: pass
+    
+    # Futuristic thin-line layout
+    print(f"\n {Colors.BOLD}{Colors.CYAN}ASTRA{Colors.END} {Colors.GRAY}MANAGED INSTANCE{Colors.END}")
+    print(f" {Colors.GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.END}")
+    print(f" {Colors.CYAN}IDENT{Colors.END}  {Colors.BOLD}userbot{Colors.END} {Colors.GRAY}@{Colors.END} {config.VERSION}")
+    print(f" {Colors.CYAN}NETID{Colors.END}  {Colors.BOLD}{ip}{Colors.END} {Colors.GRAY}»{Colors.END} {Colors.GREEN}SECURE{Colors.END}")
+    print(f" {Colors.CYAN}STATE{Colors.END}  {Colors.BOLD}ACTIVE{Colors.END}   {Colors.GRAY}»{Colors.END} {Colors.BLUE}HEADLESS{Colors.END}")
+    print(f" {Colors.CYAN}PROC {Colors.END}  {Colors.BOLD}{os.getpid()}{Colors.END}   {Colors.GRAY}»{Colors.END} {Colors.BOLD}STABLE{Colors.END}")
+    print(f" {Colors.GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.END}\n")
 
 # Bridge Patch for Web Dashboard
 def patch_authenticator(client_instance):
@@ -79,7 +78,7 @@ def patch_authenticator(client_instance):
 client = Client(
     session_id=os.getenv("ASTRA_SESSION_ID", "userbot"),
     phone=os.getenv("PHONE_NUMBER"),
-    headless=os.getenv("ASTRA_HEADLESS", "True").lower() == "true"
+    headless=os.getenv("ASTRA_HEADLESS", "False").lower() == "true"
 )
 
 # Apply patch immediately
@@ -97,11 +96,9 @@ async def on_ready(_):
     try:
         user = await client.get_me()
         
-        print("\n" + "="*40)
-        print(f"🚀 ASTRA USERBOT IS ONLINE!")
-        print(f"👤 Logged in as: {user.name} ({user.id})")
-        print(f"📦 Version: {config.VERSION}")
-        print("="*40 + "\n")
+        print_banner()
+        logger.info(f"🚀 ASTRA USERBOT IS ONLINE! Logged in as: {user.name}")
+
         
         # 1. Initialize Persistent State Manager
         from utils.state import state
@@ -135,6 +132,25 @@ async def on_ready(_):
 
     except Exception as e:
         logger.error(f"Critical error during startup sequence: {e}", exc_info=True)
+
+# 4. PM Protection Integration
+# ---------------------------
+from utils.pm_permit_manager import enforce_pm_protection
+
+@client.on("message")
+async def pm_protection_listener(msg: Message):
+    """
+    Global listener for PM protection enforcement.
+    Intercepts messages in private chats and applies security filters.
+    """
+    try:
+        # We don't block messages that already have a command match 
+        # unless you want extreme protection. Usually, unpermitted 
+        # users shouldn't even trigger commands.
+        # Here we just run the enforcement logic.
+        await enforce_pm_protection(client, msg)
+    except Exception as e:
+        logger.error(f"Error in PM protection listener: {e}")
 
 # Application Lifecycle
 # --------------------

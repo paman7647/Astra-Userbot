@@ -13,7 +13,7 @@ from . import *
     description="Set AFK status.",
     category="General",
     aliases=[],
-    usage="[reason]",
+    usage="[reason] (optional; e.g. 'dinner')",
     owner_only=True
 )
 async def afk_handler(client: Client, message: Message):

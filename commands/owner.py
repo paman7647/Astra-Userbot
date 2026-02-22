@@ -14,12 +14,12 @@ Commands to update profile info, bio, pfp, and status stories.
 from . import *
 import os
 import base64
-
+import time
 @astra_command(
     name="setname",
     description="Update your profile display name.",
     category="Owner",
-    usage="<new_name>",
+    usage="<new_name> (e.g. John Doe)",
     owner_only=True
 )
 async def setname_handler(client: Client, message: Message):
@@ -41,7 +41,7 @@ async def setname_handler(client: Client, message: Message):
     description="Update your profile 'About' (Bio) text.",
     category="Owner",
     aliases=["setbio", "setabout"],
-    usage="<text>",
+    usage="<text> (e.g. Available)",
     owner_only=True
 )
 async def setbio_handler(client: Client, message: Message):
@@ -63,7 +63,7 @@ async def setbio_handler(client: Client, message: Message):
     description="Post a text or media status update (Story).",
     category="Owner",
     aliases=["setstatus", "post"],
-    usage="<text/reply media>",
+    usage="<text/reply media> (reply to a message or supply text)",
     owner_only=True
 )
 async def status_handler(client: Client, message: Message):
@@ -73,14 +73,14 @@ async def status_handler(client: Client, message: Message):
         status_msg = await smart_reply(message, " ⏳ *Uploading media to status...*")
         try:
             # Download quoted media
-            media_b64 = await client.download_media(message.quoted_message_id)
+            media_b64 = await client.media.download_media(message.quoted.id if message.quoted else message.quoted_message_id)
             caption = " ".join(args) if args else ""
             
             # Determine type
             mime = message.quoted.mimetype
             mtype = 'image' if 'image' in mime else 'video'
             
-            await client.api.send_status_media(media_b64, mtype, caption)
+            await client.api.send_media_status(media_b64, mtype, caption)
             await status_msg.edit(" ✅ Media status posted successfully!")
         except Exception as e:
             await status_msg.edit(f" ❌ Failed to post media status: {str(e)}")
@@ -102,7 +102,7 @@ async def status_handler(client: Client, message: Message):
     name="setpfp",
     description="Update your profile picture.",
     category="Owner",
-    usage="(reply to image)",
+    usage="(reply to image) (e.g. .setpfp reply)",
     owner_only=True
 )
 async def setpfp_handler(client: Client, message: Message):
@@ -114,10 +114,10 @@ async def setpfp_handler(client: Client, message: Message):
     try:
         # PFP Update usually requires a bridge method or direct Job call
         # We'll use a direct bridge call for maximum reliability
-        media_b64 = await client.download_media(message.quoted_message_id)
+        media_b64 = await client.media.download_media(message.quoted.id if message.quoted else message.quoted_message_id)
         
-        # Call bridge directly
-        success = await client.bridge.call("updateProfilePic", {"data": media_b64})
+        # Call API method
+        success = await client.account.update_profile_pic(media_b64)
         
         if success:
             await status_msg.edit(" ✅ Profile picture updated successfully!")
@@ -127,10 +127,37 @@ async def setpfp_handler(client: Client, message: Message):
         await status_msg.edit(f" ❌ Failed to update PFP: {str(e)}")
 
 @astra_command(
+    name="setgpic",
+    description="Update the current group's picture.",
+    category="Owner",
+    aliases=["setgrouppfp"],
+    usage="(reply to image) (e.g. .setgpic reply)",
+    owner_only=True
+)
+async def setgpic_handler(client: Client, message: Message):
+    if not message.is_group:
+        return await smart_reply(message, " ❌ This command only works in groups.")
+    if not message.has_quoted_msg or not message.quoted.is_media or 'image' not in message.quoted.mimetype:
+        return await smart_reply(message, " ⚠️ Reply to an image to set it as group picture.")
+    
+    status_msg = await smart_reply(message, " ⏳ *Updating group picture...*")
+    
+    try:
+        media_b64 = await client.media.download_media(message.quoted.id if message.quoted else message.quoted_message_id)
+        success = await client.group.update_profile_pic(message.chat_id, media_b64)
+        
+        if success:
+            await status_msg.edit(" ✅ Group picture updated successfully!")
+        else:
+            await status_msg.edit(" ❌ Group picture update returned false.")
+    except Exception as e:
+        await status_msg.edit(f" ❌ Failed to update group PFP: {str(e)}")
+
+@astra_command(
     name="privacy",
     description="View or update your privacy settings.",
     category="Owner",
-    usage="[category value]",
+    usage="[category value] (e.g. last_seen all)",
     owner_only=True
 )
 async def privacy_handler(client: Client, message: Message):

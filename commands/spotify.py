@@ -22,7 +22,7 @@ from utils.helpers import get_progress_bar
     description="Download/Search Spotify track",
     category="Media",
     aliases=[],
-    usage="<query|url>",
+    usage="<query|url> (search term or Spotify link)",
     owner_only=False
 )
 async def spotify_handler(client: Client, message: Message):
@@ -62,13 +62,12 @@ async def spotify_handler(client: Client, message: Message):
             
             if line_str.startswith("METADATA:"):
                 metadata.update(json.loads(line_str.replace("METADATA:", "")))
-                try:
-                    await status_msg.edit(
-                        f"✨ *{metadata['title']}*\n"
-                        f"🌐 *Platform:* {metadata['platform']}\n\n"
-                        f"⏳ *Accessing content...*"
-                    )
-                except: pass
+                time.sleep(0.5)
+                await status_msg.edit(
+                    f"✨ *{metadata['title']}*\n"
+                    f"🌐 *Platform:* {metadata['platform']}\n\n"
+                    f"⏳ *Accessing content...*"
+                )
                 continue
 
             if "[download]" in line_str and "%" in line_str:
@@ -79,17 +78,16 @@ async def spotify_handler(client: Client, message: Message):
                     current_time = time.time()
                     if current_time - last_update_time > 2.0 or pct >= 100:
                         bar = get_progress_bar(pct)
-                        try:
-                            await status_msg.edit(
-                                f"✨ *{metadata['title']}*\n"
-                                f"🌐 *Platform:* {metadata['platform']}\n\n"
-                                f"📥 *Downloading:* {bar}\n"
-                                f"📋 *Size:* `{size}`\n"
-                                f"⚡ *Speed:* `{speed}`\n"
-                                f"⏳ *Remaining:* `{eta}`"
-                            )
-                            last_update_time = current_time
-                        except: pass
+                        time.sleep(0.5)
+                        await status_msg.edit(
+                            f"✨ *{metadata['title']}*\n"
+                            f"🌐 *Platform:* {metadata['platform']}\n\n"
+                            f"📥 *Downloading:* {bar}\n"
+                            f"📋 *Size:* `{size}`\n"
+                            f"⚡ *Speed:* `{speed}`\n"
+                            f"⏳ *Remaining:* `{eta}`"
+                        )
+                        last_update_time = current_time
 
             if line_str.startswith("SUCCESS:"):
                 res = json.loads(line_str.replace("SUCCESS:", ""))
@@ -100,9 +98,11 @@ async def spotify_handler(client: Client, message: Message):
         if process.returncode != 0:
             stderr = await process.stderr.read()
             err_text = stderr.decode(errors='ignore')[:300]
+            time.sleep(0.5)
             return await status_msg.edit(f"❌ Spotify Core Error:\n```{err_text}```")
 
         if not files:
+            time.sleep(0.5)
             return await status_msg.edit(" ❌ Could not find track.")
 
         file_path = files[0]
@@ -127,27 +127,21 @@ async def spotify_handler(client: Client, message: Message):
             else:
                 speed_text = "Checking..."
 
-            try:
-                await status_msg.edit(
-                    f"✨ *{metadata['title']}*\n"
-                    f"🌐 *Platform:* {metadata['platform']}\n\n"
-                    f"📤 *Uploading:* {bar}\n"
-                    f"⚡ *Speed:* `{speed_text}`"
-                )
-                upload_last_update = now
-            except: pass
+            time.sleep(0.5)
+            await status_msg.edit(
+                f"✨ *{metadata['title']}*\n"
+                f"🌐 *Platform:* {metadata['platform']}\n\n"
+                f"📤 *Uploading:* {bar}\n"
+                f"⚡ *Speed:* `{speed_text}`"
+            )
+            upload_last_update = now
 
         try:
             await client.send_audio(message.chat_id, file_path, reply_to=message.id, progress=on_upload_progress)
             await status_msg.delete()
         except Exception as e:
-            try:
-                await status_msg.edit(f"✨ *{metadata['title']}*\n🔄 *Finalizing delivery...*")
-                await client.send_file(message.chat_id, file_path, document=True, reply_to=message.id)
-                await status_msg.delete()
-            except Exception as final_err:
-                try: await status_msg.edit(f" ❌ Delivery failed: {str(final_err)}")
-                except: await message.reply(f" ❌ Delivery failed: {str(final_err)}")
+            time.sleep(0.5)
+            await status_msg.edit(f" ❌ Delivery failed: {str(e)}")
 
         if os.path.exists(file_path): os.remove(file_path)
 

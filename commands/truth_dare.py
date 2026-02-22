@@ -12,7 +12,7 @@ Social Utility: Truth or Dare
 A classic party game for groups.
 Fetches randomized prompts from an external API with local fallback.
 """
-
+import time
 import random
 import aiohttp
 from . import *
@@ -52,7 +52,7 @@ async def fetch_prompt(mode: str) -> str:
     description="Classic Truth or Dare game for social fun.",
     category="Fun/Lite",
     aliases=["dare", "td"],
-    usage="<truth|dare>",
+    usage="<truth|dare> (e.g. truth or dare)",
     is_public=True
 )
 async def truth_handler(client: Client, message: Message):
@@ -80,18 +80,14 @@ async def truth_handler(client: Client, message: Message):
         if choice == "truth":
             status_msg = await smart_reply(message, " 🤔 *Fetching truth...*")
             prompt = await fetch_prompt("truth") or random.choice(TRUTHS)
-            try:
-                await status_msg.edit(f"🤔 **Astra Truth:**\n\n_{prompt}_")
-            except:
-                await message.reply(f"🤔 **Astra Truth:**\n\n_{prompt}_")
+            time.sleep(0.5)
+            await status_msg.edit(f"🤔 **Astra Truth:**\n\n_{prompt}_")
             
         elif choice == "dare":
             status_msg = await smart_reply(message, " 🔥 *Fetching dare...*")
             prompt = await fetch_prompt("dare") or random.choice(DARES)
-            try:
-                await status_msg.edit(f"🔥 **Astra Dare:**\n\n_{prompt}_")
-            except:
-                await message.reply(f"🔥 **Astra Dare:**\n\n_{prompt}_")
+            time.sleep(0.5)
+            await status_msg.edit(f"🔥 **Astra Dare:**\n\n_{prompt}_")
             
         else:
             await smart_reply(message, " 📋 Usage: `.truth` | `.dare` | `.td <truth|dare>`")

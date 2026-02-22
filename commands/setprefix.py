@@ -13,7 +13,7 @@ from . import *
     description="Change the command prefix.",
     category="System",
     aliases=[],
-    usage="<new_prefix>",
+    usage="<new_prefix> (e.g. !)",
     owner_only=True
 )
 async def setprefix_handler(client: Client, message: Message):

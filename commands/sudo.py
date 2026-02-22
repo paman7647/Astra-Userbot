@@ -23,7 +23,7 @@ import asyncio
     description="Grant or revoke administrative (sudo) privileges for a user.",
     category="Owner Controls",
     aliases=["promote", "demote"],
-    usage="<add|rem> [reply or user_id]",
+    usage="<add|rem> [reply or user_id] (e.g. .sudo add @1234567890)",
     owner_only=True
 )
 async def sudo_handler(client: Client, message: Message):
@@ -40,8 +40,8 @@ async def sudo_handler(client: Client, message: Message):
         # Scenario A: Reply to a message
         if message.has_quoted_msg:
             # quoted_participant is a JID object
-            if message.quoted_participant:
-                target_uid = message.quoted_participant.serialized
+            if message.quoted and message.quoted.sender:
+                target_uid = message.quoted.sender.serialized
         
         # Scenario B: Manual ID provided in arguments
         if not target_uid and len(args_list) >= 2:

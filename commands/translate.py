@@ -15,13 +15,14 @@ Supports 100+ languages with automatic source detection.
 
 import aiohttp
 from . import *
+from . import *
 
 @astra_command(
     name="translate",
     description="Translate text or replies to another language.",
     category="Utility",
     aliases=["tr"],
-    usage="[lang_code] <text/reply>",
+    usage="[lang_code] <text/reply> (e.g. .translate en Hello)",
     is_public=True
 )
 async def translate_handler(client: Client, message: Message):
@@ -61,10 +62,7 @@ async def translate_handler(client: Client, message: Message):
         async with aiohttp.ClientSession() as session:
             async with session.get(url, timeout=10) as resp:
                 if resp.status != 200:
-                    try:
-                        return await status_msg.edit(" ⚠️ Translation service is unreachable.")
-                    except:
-                        return await message.reply(" ⚠️ Translation service is unreachable.")
+                    return await safe_edit(status_msg, " ⚠️ Translation service is unreachable.")
                 
                 data = await resp.json()
                 translated = "".join([part[0] for part in data[0]])
@@ -74,10 +72,7 @@ async def translate_handler(client: Client, message: Message):
                     f"*Target:* `{target_lang.upper()}`\n\n"
                     f"{translated}"
                 )
-                try:
-                    await status_msg.edit(report)
-                except:
-                    await message.reply(report)
+                await status_msg.edit(report)
 
     except Exception as e:
         await smart_reply(message, f" ⚠️ Translation failed: {str(e)}")

@@ -23,7 +23,7 @@ JOKE_API_URL = "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,po
     description="Fetch a random, family-friendly joke.",
     category="Fun/Lite",
     aliases=["haha"],
-    usage="",
+    usage=".joke (no arguments)",
     is_public=True
 )
 async def joke_handler(client: Client, message: Message):

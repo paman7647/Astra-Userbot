@@ -5,6 +5,20 @@ All notable changes to the **Astra-Userbot** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1b8] - 2026-02-22
+### Added
+- **Premium UI Overhaul**: Professionalized `.alive`, `.platform`, `.stats`, and `.ping` commands with premium layouts and descriptive metrics.
+- **Comprehensive Documentation**: Completed a full audit of all commands to include detailed Syntax, Examples, and Descriptions in the help system.
+- **Dynamic Identity**: The `.alive` command now resolves user pushname/name dynamically from the engine.
+### Fixed
+- **Media Suite Recovery**: Fixed critical issues where `.youtube`, `.instagram`, `.pinterest`, and other downloaders were non-functional.
+- **Group Management**: Resolved bugs preventing `.admin` and other group-related commands from executing correctly.
+- **Optimized Performance**: Significant internal refinements to media processing and command dispatching for a faster user experience.
+### Changed
+- **Logic Restoration**: Reverted core plugin logic (e.g., `admin.py`, `meme.py`, `exec_cmd.py`) across the suite to match original behavior while maintaining stability polish.
+- **Manual Delay Stability**: Implemented mandatory `time.sleep(0.5)` for the second and subsequent edits in multi-edit sequences across 40+ plugins for better rate-limit compliance.
+- **Restored Formatting**: Reverted `help.py` and `plugin_utils.py` to original states to ensure architectural parity.
+
 ## [0.0.1b7] - 2026-02-21
 ### Added
 - **Engine Sync (v0.0.2b7)**: Full integration with the latest Astra Engine, including the new 3-stage history retrieval strategy.

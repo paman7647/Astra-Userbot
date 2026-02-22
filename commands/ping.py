@@ -6,43 +6,47 @@
 # See LICENSE file in the project root for full license text.
 # -----------------------------------------------------------
 
-"""
-Diagnostic Tool: Latency Check
------------------------------
-Measures the round-trip time between the userbot and WhatsApp servers.
-"""
-
 import time
+import platform
 from . import *
 
 @astra_command(
     name="ping",
-    description="Measure the bot's response latency.",
+    description="Description: Measure the round-trip latency (RTT) between the Astra engine and WhatsApp's globally distributed servers. This command performs a real-time connectivity test to ensure optimal responsiveness and identifies potential network bottlenecks.\nSyntax: .ping\nExample: .ping",
     category="Utility",
     aliases=["p"],
-    usage="",
+    usage=".ping (checks latency)",
     is_public=True
 )
 async def ping_handler(client: Client, message: Message):
-    """
-    Calculates RTT (Round Trip Time) by measuring the delay 
-    in sending a response message.
-    """
+    """Calculates round-trip latency with descriptive system context."""
     try:
         start_time = time.time()
         
-        # Initial response to measure latency
-        status_msg = await message.reply("📡 *Pinging...*")
+        # First edit without delay
+        status_msg = await message.reply("📡 *ASTRA CONNECTIVITY TEST*\n*Status:* `Measuring Latency...`")
         
         end_time = time.time()
         latency = round((end_time - start_time) * 1000)
         
-        # Final result with clean formatting
-        try:
-            await status_msg.edit(f"🏓 **Pong!**\n`Latency: {latency}ms`")
-        except:
-            await message.reply(f"🏓 **Pong!**\n`Latency: {latency}ms`")
+        # Determine status level
+        status = "Excellent" if latency < 200 else "Good" if latency < 500 else "Average"
+        
+        # Final result with descriptive formatting
+        descriptive_ping = (
+            "🏓 **PONG!** 🚀\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📡 **Latency:** `{latency}ms`\n"
+            f"🛰️ **Network:** `{status}`\n"
+            f"⚙️ **System:** `{platform.system()} ({platform.release()})`\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "✨ *Astra Engine is in peak form.*"
+        )
+        
+        # Second edit with manual delay
+        time.sleep(0.5)
+        await status_msg.edit(descriptive_ping)
 
     except Exception as e:
-        await smart_reply(message, " ⚠️ Latency check failed.")
+        await smart_reply(message, " ⚠️ Connectivity check failed.")
         await report_error(client, e, context='Ping command failure')

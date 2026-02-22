@@ -13,6 +13,7 @@ Provides real-time weather reports and visual forecast cards using wttr.in.
 Supports worldwide city lookups.
 """
 
+import time
 import aiohttp
 import base64
 from . import *
@@ -22,7 +23,7 @@ from . import *
     description="Get the current weather forecast for a specific city.",
     category="Utility",
     aliases=["wttr", "forecast"],
-    usage="<city>",
+    usage="<city> (e.g. London)",
     is_public=True
 )
 async def weather_handler(client: Client, message: Message):
@@ -43,9 +44,10 @@ async def weather_handler(client: Client, message: Message):
             # 1. Fetch text data
             async with session.get(text_url, timeout=10) as resp:
                 if resp.status != 200:
-                    return await status_msg.edit(" ⚠️ Weather service is currently unavailable.")
+                    time.sleep(0.5)
+                    return await status_msg.edit(" ⚠️ Failed to retrieve weather data.")
                 data = await resp.text()
-
+            
             weather_report = (
                 f"🌍 **Weather: {city.capitalize()}**\n\n"
                 f"{data}\n\n"
@@ -67,10 +69,8 @@ async def weather_handler(client: Client, message: Message):
                     return await status_msg.delete()
 
             # Fallback to text only
-            try:
-                await status_msg.edit(weather_report)
-            except:
-                await message.reply(weather_report)
+            time.sleep(0.5)
+            await status_msg.edit(weather_report)
 
     except Exception as e:
         await smart_reply(message, " ⚠️ Weather lookup failed.")

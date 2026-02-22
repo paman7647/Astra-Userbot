@@ -14,14 +14,16 @@ Uses randomuser.me API.
 """
 
 import aiohttp
+import time
 from . import *
+from utils.helpers import safe_edit
 
 @astra_command(
     name="fake",
     description="Generate a fake identity.",
     category="Fun",
     aliases=["identity", "fakeperson"],
-    usage="",
+    usage=".fake (generate random identity)",
     is_public=True
 )
 async def fake_handler(client: Client, message: Message):
@@ -35,7 +37,8 @@ async def fake_handler(client: Client, message: Message):
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
-                    return await status_msg.edit(" ⚠️ Failed to fetch identity.")
+                    time.sleep(0.5)
+                    return await safe_edit(status_msg, " ⚠️ Failed to fetch identity.")
                 
                 data = await resp.json()
                 user = data['results'][0]
@@ -78,7 +81,8 @@ async def fake_handler(client: Client, message: Message):
                             await status_msg.delete()
                             return
 
-                await status_msg.edit(identity_card)
+                time.sleep(0.5)
+                await safe_edit(status_msg, identity_card)
 
     except Exception as e:
         await report_error(client, e, context='Fake command failure')

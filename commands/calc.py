@@ -21,7 +21,7 @@ from . import *
     description="Solve complex mathematical expressions.",
     category="Education",
     aliases=["math", "calculate"],
-    usage="<expression>",
+    usage="<expression> (e.g. 2+2)",
     is_public=True
 )
 async def calc_handler(client: Client, message: Message):

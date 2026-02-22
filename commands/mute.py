@@ -14,7 +14,7 @@ from utils.state import state
     description="Mute or unmute group notifications/commands (Bot internal)",
     category="Group",
     aliases=["unmute"],
-    usage="<on|off>",
+    usage="<on|off> (enable or disable mute)",
     owner_only=False
 )
 async def mute_handler(client: Client, message: Message):
@@ -36,7 +36,7 @@ async def mute_handler(client: Client, message: Message):
         if gid not in state.state["group_configs"]: state.state["group_configs"][gid] = {}
 
         state.state["group_configs"][gid]["muted"] = is_muted
-        state.save()
+        await state.save()
 
         await smart_reply(message, f" 🤫 Group commands are now *{'MUTED' if is_muted else 'UNMUTED'}* for this group.")
     except Exception as e:

@@ -11,6 +11,7 @@ import aiohttp
 import base64
 import time
 from . import *
+from utils.helpers import safe_edit
 
 # Shared configuration for requests
 REQUEST_HEADERS = {
@@ -23,7 +24,7 @@ REQUEST_HEADERS = {
     description="Get a random meme from Reddit",
     category="Fun",
     aliases=[],
-    usage="",
+    usage=".meme (no arguments)",
     owner_only=False
 )
 async def meme_handler(client: Client, message: Message):
@@ -72,17 +73,14 @@ async def meme_handler(client: Client, message: Message):
                         message.chat_id, 
                         media, 
                         caption=f"*{title}*\nSubreddit: r/{subreddit}",
-                        quoted_message_id=message.id
+                        reply_to=message.id
                     )
                     found_meme = True
                     if status_msg: await status_msg.delete()
                     break
 
             if not found_meme:
-                try:
-                    await status_msg.edit(f" ❌ Failed to fetch meme: {last_error or 'Unknown issue'}")
-                except:
-                    await message.reply(f" ❌ Failed to fetch meme: {last_error or 'Unknown issue'}")
+                await safe_edit(status_msg, f" ❌ Failed to fetch meme: {last_error or 'Unknown issue'}")
 
     except Exception as e:
         await smart_reply(message, f" ❌ Error: {str(e)}")
@@ -93,7 +91,7 @@ async def meme_handler(client: Client, message: Message):
     description="Get a random NSFW/Dark meme from Reddit",
     category="Fun",
     aliases=["nsfwmeme", "darkmeme"],
-    usage="",
+    usage=".dmeme (no arguments)",
     owner_only=False
 )
 async def dmeme_handler(client: Client, message: Message):
@@ -148,17 +146,14 @@ async def dmeme_handler(client: Client, message: Message):
                     message.chat_id, 
                     media, 
                     caption=f"*{title}*\nSubreddit: r/{subreddit}",
-                    quoted_message_id=message.id
+                    reply_to=message.id
                 )
                 found_meme = True
                 if status_msg: await status_msg.delete()
                 break
 
             if not found_meme:
-                try:
-                    await status_msg.edit(f" ❌ NSFW Meme Error: {last_error or 'Could not find a valid meme'}")
-                except:
-                    await message.reply(f" ❌ NSFW Meme Error: {last_error or 'Could not find a valid meme'}")
+                await safe_edit(status_msg, f" ❌ NSFW Meme Error: {last_error or 'Could not find a valid meme'}")
 
     except Exception as e:
         await smart_reply(message, f" ❌ System Error: {str(e)}")

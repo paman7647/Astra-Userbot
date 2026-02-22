@@ -25,11 +25,14 @@ async def is_authorized(event) -> bool:
     from_me = getattr(event, 'from_me', False)
     if from_me: return True
     
+    # Normalize sender_id for lookup (Primary JID only)
+    primary_id = sender_id.split('@')[0].split(':')[0] + '@' + sender_id.split('@')[1] if '@' in sender_id else sender_id
+    
     # 2. Sudo Users
-    if state.is_sudo(sender_id): return True
+    if state.is_sudo(primary_id): return True
     
     # 3. Owner
-    sender_num = sender_id.split('@')[0]
+    sender_num = primary_id.split('@')[0]
     if str(config.OWNER_ID) == sender_num: return True
     
     return False
@@ -42,7 +45,10 @@ async def is_owner(event) -> bool:
     # Check if message is from the bot account itself (considered owner)
     if getattr(event, 'from_me', False): return True
     
-    sender_num = sender_id.split('@')[0]
+    # Normalize sender_id for lookup (Primary JID only)
+    primary_id = sender_id.split('@')[0].split(':')[0] + '@' + sender_id.split('@')[1] if '@' in sender_id else sender_id
+    
+    sender_num = primary_id.split('@')[0]
     return str(config.OWNER_ID) == sender_num
 
 # Exported filters

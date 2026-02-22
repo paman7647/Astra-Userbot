@@ -47,6 +47,8 @@ temp/
 logs/
 *.log
 
+docs/_build/
+
 # OS generated files
 .DS_Store
 .DS_Store?

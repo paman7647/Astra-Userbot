@@ -23,7 +23,7 @@ FACT_API_URL = "https://uselessfacts.jsph.pl/random.json?language=en"
     description="Get an interesting random fact.",
     category="Fun/Lite",
     aliases=["trivia"],
-    usage="",
+    usage=".fact (no arguments)",
     is_public=True
 )
 async def fact_handler(client: Client, message: Message):

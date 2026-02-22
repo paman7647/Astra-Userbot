@@ -21,7 +21,7 @@ from . import *
     description="Check the compatibility match between two souls.",
     category="Fun/Lite",
     aliases=["match", "love"],
-    usage="[@user1] [@user2]",
+    usage="[@user1] [@user2] (e.g. .ship @alice @bob)",
     is_public=True
 )
 async def ship_handler(client: Client, message: Message):
@@ -39,13 +39,15 @@ async def ship_handler(client: Client, message: Message):
             user1 = args_list[0]
             user2 = args_list[1]
         elif len(args_list) == 1:
-            user2 = args_list[0]
+            me = await client.get_me()
+            user1 = await get_contact_name(client, me.id)
+            user2 = await get_contact_name(client, args_list[0])
         elif message.has_quoted_msg:
-            # quoted_participant is a JID object
-            if message.quoted_participant:
-                user2 = f"@{message.quoted_participant.user}"
-            else:
-                user2 = f"@{message.chat_id.user}"
+            me = await client.get_me()
+            user1 = await get_contact_name(client, me.id)
+            quoted = message.quoted
+            target_jid = quoted.sender or quoted.chat_id
+            user2 = await get_contact_name(client, target_jid)
 
         # 2. Logic & Branding
         percentage = random.randint(0, 100)

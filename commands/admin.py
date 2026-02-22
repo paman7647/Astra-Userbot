@@ -15,7 +15,7 @@ from utils.plugin_utils import load_plugin, unload_plugin, PLUGIN_HANDLES
     description="Group administration commands.",
     category="Group",
     aliases=["group", "g"],
-    usage="<kick|add|promote|demote|tagall|create|leave> [@user|title]",
+    usage="<kick|add|promote|demote|tagall|create|leave> [@user|title] (e.g. .admin kick @1234567890)",
     owner_only=True
 )
 async def admin_handler(client: Client, message: Message):
@@ -31,19 +31,41 @@ async def admin_handler(client: Client, message: Message):
     action = args_list[0].lower()
 
     try:
+        import re
         if action == 'create':
             if len(args_list) < 2: return await smart_reply(message, "Please provide a group title.")
-            title = " ".join(args_list[1:])
             me = await client.get_me()
-            participants = [me.id]
+            participants = [str(me.id)]
+            title_parts = []
+            
+            for arg in args_list[1:]:
+                if arg.startswith('@'):
+                    participants.append(f"{arg[1:]}@c.us")
+                elif re.match(r'^\d{8,15}$', arg):
+                    participants.append(f"{arg}@c.us")
+                else:
+                    title_parts.append(arg)
+            
+            title = " ".join(title_parts)
+            if not title: title = "New Group"
             
             if message.has_quoted_msg:
                 quoted = message.quoted
-                qid = quoted.author or quoted.chat_id
+                qid = str(quoted.sender or quoted.chat_id)
                 if qid and qid not in participants: participants.append(qid)
             
             gid = await client.group.create(title, participants)
-            await smart_reply(message, f" ✅ Group *{title}* created!\nID: `{gid}`")
+            try:
+                invite_code = await client.group.get_invite_link(gid)
+                invite_link = f"https://chat.whatsapp.com/{invite_code}"
+            except:
+                try:
+                    invite_code = await client.group.revoke_invite_link(gid)
+                    invite_link = f"https://chat.whatsapp.com/{invite_code}"
+                except Exception as e:
+                    invite_link = f"(Failed to get invite link: {e})"
+                    
+            await smart_reply(message, f" ✅ Group *{title}* created!\nID: `{gid}`\nLink: {invite_link}")
             return
 
         if not is_group:
@@ -55,43 +77,62 @@ async def admin_handler(client: Client, message: Message):
             return
 
         # Actions requiring a target
-        target_id = None
+        target_ids = []
+        
+        # 1. Collect from mentions
+        if message.mentioned_jids:
+            target_ids.extend([str(jid) for jid in message.mentioned_jids])
+            
+        # 2. Collect from arguments (phone numbers or explicit JIDs)
         if len(args_list) > 1:
-            target_id = args_list[1].replace('@', '').strip()
-            if not target_id.endswith('@c.us') and not target_id.endswith('@lid'): 
-                target_id = f"{target_id}@c.us"
-        elif message.has_quoted_msg:
+            for arg in args_list[1:]:
+                raw = arg.replace('@', '').strip()
+                if re.match(r'^\d{8,15}$', raw):
+                    target_ids.append(f"{raw}@c.us")
+                elif raw.endswith('@c.us') or raw.endswith('@lid'):
+                    target_ids.append(raw)
+        
+        # 3. Collect from quoted message
+        if not target_ids and message.has_quoted_msg:
             quoted = message.quoted
-            target_id = quoted.author or quoted.chat_id
+            qid = str(quoted.sender or quoted.chat_id)
+            if qid: target_ids.append(qid)
+            
+        # Normalize and Deduplicate (Prevents double counting for s.whatsapp.net vs c.us)
+        unique_targets = {}
+        for jid in target_ids:
+            clean = str(jid).replace('@s.whatsapp.net', '@c.us').strip()
+            unique_targets[clean] = True
+        
+        target_ids = list(unique_targets.keys())
+        # print(f"DEBUG: Targets for {action}: {target_ids}") # Uncomment for debugging if needed
         
         if action in ['kick', 'remove']:
-            if not target_id: return await smart_reply(message, " Mention a user or reply to their message to kick.")
-            await client.group.remove_participants(message.chat_id, [target_id])
-            await smart_reply(message, " 💥 User removed.")
+            if not target_ids: return await smart_reply(message, " Mention users or reply to their message to kick.")
+            await client.group.remove_participants(message.chat_id, target_ids)
+            await smart_reply(message, f" 💥 Processed *{len(target_ids)}* removals.")
         
         elif action == 'add':
-            if not target_id: return await smart_reply(message, " Provide a user ID or mention someone to add.")
-            await client.group.add_participants(message.chat_id, [target_id])
-            await smart_reply(message, " ➕ User added.")
+            if not target_ids: return await smart_reply(message, " Provide user IDs, phone numbers or mention someone to add.")
+            await client.group.add_participants(message.chat_id, target_ids)
+            await smart_reply(message, f" ➕ Processed *{len(target_ids)}* additions.")
 
         elif action == 'promote':
-            if not target_id: return await smart_reply(message, " Mention a user to promote.")
-            await client.group.promote_participants(message.chat_id, [target_id])
-            await smart_reply(message, " 🛡️ User promoted to Admin.")
+            if not target_ids: return await smart_reply(message, " Mention users to promote.")
+            await client.group.promote_participants(message.chat_id, target_ids)
+            await smart_reply(message, f" 🛡️ Processed *{len(target_ids)}* promotions.")
 
         elif action == 'demote':
-            if not target_id: return await smart_reply(message, " Mention a user to demote.")
-            await client.group.demote_participants(message.chat_id, [target_id])
-            await smart_reply(message, " 👤 User demoted.")
+            if not target_ids: return await smart_reply(message, " Mention users to demote.")
+            await client.group.demote_participants(message.chat_id, target_ids)
+            await smart_reply(message, f" 👤 Processed *{len(target_ids)}* demotions.")
 
         elif action in ['tagall', 'everyone']:
             status = await smart_reply(message, " 📢 Tagging everyone...")
             info = await client.group.get_info(message.chat_id)
             if not info or not info.participants: 
-                try:
-                    return await status.edit(" Failed to fetch group info.")
-                except:
-                    return await message.reply(" Failed to fetch group info.")
+                time.sleep(0.5)
+                return await status.edit(" Failed to fetch group info.")
             
             text = " 📢 *Everyone Check!* \n\n"
             mentions = []
@@ -114,7 +155,7 @@ async def admin_handler(client: Client, message: Message):
     description="Reload a plugin without restarting.",
     category="System",
     aliases=["re"],
-    usage="<plugin_name>",
+    usage="<plugin_name> (e.g. meme)",
     owner_only=True
 )
 async def reload_handler(client: Client, message: Message):
@@ -154,13 +195,11 @@ async def reload_handler(client: Client, message: Message):
                      failed.append(plugin.split('.')[-1])
              
              if failed:
-                 try:
-                     await status_msg.edit(f" ⚠️ Reloaded {count} plugins.\nFailed: {', '.join(failed)}")
-                 except: pass
+                 time.sleep(0.5)
+                 await status_msg.edit(f" ⚠️ Reloaded {count} plugins.\nFailed: {', '.join(failed)}")
              else:
-                 try:
-                     await status_msg.edit(f" ✅ Successfully reloaded {count} plugins!")
-                 except: pass
+                 time.sleep(0.5)
+                 await status_msg.edit(f" ✅ Successfully reloaded {count} plugins!")
              return
 
         # Single Plugin Logic
@@ -178,14 +217,13 @@ async def reload_handler(client: Client, message: Message):
         
         # 3. specific unload/load
         unload_plugin(client, plugin_name)
+        time.sleep(0.5)
         if load_plugin(client, plugin_name):
-            try:
-                await status_msg.edit(f" ✅ Plugin `{target}` reloaded successfully!")
-            except: pass
+            time.sleep(0.5)
+            await status_msg.edit(f" ✅ Plugin `{target}` reloaded successfully!")
         else:
-            try:
-                await status_msg.edit(f" ❌ Failed to reload `{target}`. Check logs.")
-            except: pass
+            time.sleep(0.5)
+            await status_msg.edit(f" ❌ Failed to reload `{target}`. Check logs.")
 
     except Exception as e:
          await smart_reply(message, f" ❌ Reload Error: {e}")

@@ -60,14 +60,15 @@ class StateManager:
         self.initialized = True
         logger.info("StateManager successfully synchronized with persistent store.")
 
-    def save(self):
+    async def save(self):
         """
         Force-syncs the entire memory state to the database.
         Note: The class handles individual state changes automatically; 
         this remains for manual consistency checks.
         """
-        for key, val in self.state.items():
-            asyncio.create_task(db.set(key, val))
+        tasks = [db.set(key, val) for key, val in self.state.items()]
+        if tasks:
+            await asyncio.gather(*tasks)
 
     # --- AFK Module ---
 

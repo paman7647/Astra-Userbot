@@ -20,7 +20,7 @@ from . import *
     description="Look up the definition and phonetics of an English word.",
     category="Education",
     aliases=["dict", "meaning"],
-    usage="<word>",
+    usage="<word> (e.g. automobile)",
     is_public=True
 )
 async def define_handler(client: Client, message: Message):

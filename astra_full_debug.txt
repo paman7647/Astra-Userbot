@@ -1,0 +1,165 @@
+2026-02-22 12:02:58,845 - [INFO] - Astra.SessionStore - SessionStore opened: /Users/paman7647/ASTRAUB/astra_userbot_test/.astra_sessions/userbot/astra_cache.db
+2026-02-22 12:02:58,845 - [INFO] - AstraBot - ✅ Authenticator patched for Web Dashboard support.
+2026-02-22 12:02:58,845 - [DEBUG] - Astra.Events - Registered listener 'on_ready' for event 'ready'
+2026-02-22 12:02:58,949 - [DEBUG] - Astra.Events - Registered listener 'pm_protection_listener' for event 'message'
+2026-02-22 12:02:58,950 - [INFO] - Astra - Initializing [userbot]...
+2026-02-22 12:02:58,950 - [INFO] - Astra.Status - Client state changed: OFFLINE -> STARTING
+2026-02-22 12:02:58,968 - [INFO] - Astra.Browser - Starting browser engine...
+2026-02-22 12:03:00,240 - [INFO] - Astra.Browser - Browser is online and ready.
+2026-02-22 12:03:00,250 - [INFO] - Astra - Browser cache (SW + CacheStorage) cleared.
+2026-02-22 12:03:00,250 - [INFO] - Astra - Establishing engine bridge...
+2026-02-22 12:03:00,250 - [INFO] - Astra.Protocol - Connecting Protocol Bridge...
+2026-02-22 12:03:00,255 - [INFO] - Astra.Protocol - Bridge uplink exposed successfully.
+2026-02-22 12:03:00,277 - [DEBUG] - Astra.Browser - JS: [Astra] Injection start...
+2026-02-22 12:03:00,278 - [DEBUG] - Astra.Browser - JS: Astra Media Bridge v2 Loaded
+2026-02-22 12:03:00,280 - [INFO] - Astra.Protocol - [Bridge] Astra Media Bridge v2 Loaded
+2026-02-22 12:03:00,281 - [DEBUG] - Astra.Browser - JS: [Astra] IDB Cache Bridge ready.
+2026-02-22 12:03:00,281 - [INFO] - Astra.Protocol - [Bridge] [Astra] IDB Cache Bridge ready.
+2026-02-22 12:03:00,282 - [DEBUG] - Astra.Browser - JS: [Astra] High-Level Engine V24 Ready.
+2026-02-22 12:03:00,282 - [INFO] - Astra.Protocol - [Bridge] [Astra] High-Level Engine V24 Ready.
+2026-02-22 12:03:00,284 - [DEBUG] - Astra.Browser - JS: [Astra] Bridge uplink established.
+2026-02-22 12:03:00,284 - [INFO] - Astra.Protocol - [Bridge] [Astra] Bridge uplink established.
+2026-02-22 12:03:00,285 - [INFO] - Astra - Connecting to WhatsApp...
+2026-02-22 12:03:00,667 - [DEBUG] - Astra.Browser - JS: [Astra] Injection start...
+2026-02-22 12:03:00,667 - [DEBUG] - Astra.Browser - JS: Astra Media Bridge v2 Loaded
+2026-02-22 12:03:00,668 - [INFO] - Astra.Protocol - [Bridge] Astra Media Bridge v2 Loaded
+2026-02-22 12:03:00,670 - [DEBUG] - Astra.Browser - JS: [Astra] IDB Cache Bridge ready.
+2026-02-22 12:03:00,670 - [INFO] - Astra.Protocol - [Bridge] [Astra] IDB Cache Bridge ready.
+2026-02-22 12:03:00,671 - [DEBUG] - Astra.Browser - JS: [Astra] High-Level Engine V24 Ready.
+2026-02-22 12:03:00,672 - [INFO] - Astra.Protocol - [Bridge] [Astra] High-Level Engine V24 Ready.
+2026-02-22 12:03:00,674 - [DEBUG] - Astra.Browser - JS: [Astra] Bridge uplink established.
+2026-02-22 12:03:00,674 - [INFO] - Astra.Protocol - [Bridge] [Astra] Bridge uplink established.
+2026-02-22 12:03:01,091 - [INFO] - Astra.Status - Client state changed: STARTING -> AUTHENTICATING
+2026-02-22 12:03:01,091 - [INFO] - Astra.Auth - Starting authentication for 917303985159...
+2026-02-22 12:03:01,115 - [DEBUG] - Astra.Auth - Still waiting for login UI to stabilize...
+2026-02-22 12:03:08,693 - [DEBUG] - Astra.Browser - JS: [Astra] Core aliases mapped.
+2026-02-22 12:03:08,694 - [INFO] - Astra.Protocol - [Bridge] [Astra] Core aliases mapped.
+2026-02-22 12:03:08,695 - [DEBUG] - Astra.Browser - JS: [Astra] AuthStore initialized.
+2026-02-22 12:03:08,695 - [INFO] - Astra.Protocol - [Bridge] [Astra] AuthStore initialized.
+2026-02-22 12:03:08,698 - [DEBUG] - Astra.Browser - JS: [Astra] Hardcoded match for: UserConstructor (WAWebWid)
+2026-02-22 12:03:08,698 - [INFO] - Astra.Protocol - [Bridge] [Astra] Hardcoded match for: UserConstructor (WAWebWid)
+2026-02-22 12:03:08,699 - [DEBUG] - Astra.Browser - JS: [Astra] Hardcoded match for: SendClear (WAWebChatClearBridge)
+2026-02-22 12:03:08,699 - [INFO] - Astra.Protocol - [Bridge] [Astra] Hardcoded match for: SendClear (WAWebChatClearBridge)
+2026-02-22 12:03:08,699 - [DEBUG] - Astra.Browser - JS: [Astra] Hardcoded match for: SendDelete (WAWebDeleteChatAction)
+2026-02-22 12:03:08,699 - [INFO] - Astra.Protocol - [Bridge] [Astra] Hardcoded match for: SendDelete (WAWebDeleteChatAction)
+2026-02-22 12:03:08,700 - [DEBUG] - Astra.Browser - JS: [Astra] Hardcoded match for: UploadUtils (WAWebUploadManager)
+2026-02-22 12:03:08,700 - [INFO] - Astra.Protocol - [Bridge] [Astra] Hardcoded match for: UploadUtils (WAWebUploadManager)
+2026-02-22 12:03:08,701 - [DEBUG] - Astra.Browser - JS: [Astra] Hardcoded match for: PushnameAction (WAWebSetPushnameConnAction)
+2026-02-22 12:03:08,701 - [INFO] - Astra.Protocol - [Bridge] [Astra] Hardcoded match for: PushnameAction (WAWebSetPushnameConnAction)
+2026-02-22 12:03:08,702 - [DEBUG] - Astra.Browser - JS: [Astra] Hardcoded modules scan complete.
+2026-02-22 12:03:08,702 - [INFO] - Astra.Protocol - [Bridge] [Astra] Hardcoded modules scan complete.
+2026-02-22 12:03:08,703 - [DEBUG] - Astra.Browser - JS: [Astra] Chat already present in Store.
+2026-02-22 12:03:08,703 - [INFO] - Astra.Protocol - [Bridge] [Astra] Chat already present in Store.
+2026-02-22 12:03:08,703 - [DEBUG] - Astra.Browser - JS: [Astra] Msg already present in Store.
+2026-02-22 12:03:08,704 - [INFO] - Astra.Protocol - [Bridge] [Astra] Msg already present in Store.
+2026-02-22 12:03:08,704 - [DEBUG] - Astra.Browser - JS: [Astra] Contact already present in Store.
+2026-02-22 12:03:08,704 - [INFO] - Astra.Protocol - [Bridge] [Astra] Contact already present in Store.
+2026-02-22 12:03:08,705 - [DEBUG] - Astra.Browser - JS: [Astra] SendMessage already present in Store.
+2026-02-22 12:03:08,705 - [INFO] - Astra.Protocol - [Bridge] [Astra] SendMessage already present in Store.
+2026-02-22 12:03:08,705 - [DEBUG] - Astra.Browser - JS: [Astra] msgFindQuery already present in Store.
+2026-02-22 12:03:08,706 - [INFO] - Astra.Protocol - [Bridge] [Astra] msgFindQuery already present in Store.
+2026-02-22 12:03:08,706 - [DEBUG] - Astra.Browser - JS: [Astra] MsgKey already present in Store.
+2026-02-22 12:03:08,706 - [INFO] - Astra.Protocol - [Bridge] [Astra] MsgKey already present in Store.
+2026-02-22 12:03:08,707 - [DEBUG] - Astra.Browser - JS: [Astra] Conn already present in Store.
+2026-02-22 12:03:08,707 - [INFO] - Astra.Protocol - [Bridge] [Astra] Conn already present in Store.
+2026-02-22 12:03:08,707 - [DEBUG] - Astra.Browser - JS: [Astra] User already present in Store.
+2026-02-22 12:03:08,707 - [INFO] - Astra.Protocol - [Bridge] [Astra] User already present in Store.
+2026-02-22 12:03:08,708 - [DEBUG] - Astra.Browser - JS: [Astra] WidFactory already present in Store.
+2026-02-22 12:03:08,708 - [INFO] - Astra.Protocol - [Bridge] [Astra] WidFactory already present in Store.
+2026-02-22 12:03:08,708 - [DEBUG] - Astra.Browser - JS: [Astra] GroupCreate already present in Store.
+2026-02-22 12:03:08,709 - [INFO] - Astra.Protocol - [Bridge] [Astra] GroupCreate already present in Store.
+2026-02-22 12:03:08,709 - [DEBUG] - Astra.Browser - JS: [Astra] ProfilePicThumb already present in Store.
+2026-02-22 12:03:08,709 - [INFO] - Astra.Protocol - [Bridge] [Astra] ProfilePicThumb already present in Store.
+2026-02-22 12:03:08,710 - [DEBUG] - Astra.Browser - JS: [Astra] Heuristic miss: StatusV3Action
+2026-02-22 12:03:08,710 - [INFO] - Astra.Protocol - [Bridge] [Astra] Heuristic miss: StatusV3Action
+2026-02-22 12:03:08,710 - [DEBUG] - Astra.Browser - JS: [Astra] StatusUtils already present in Store.
+2026-02-22 12:03:08,710 - [INFO] - Astra.Protocol - [Bridge] [Astra] StatusUtils already present in Store.
+2026-02-22 12:03:08,711 - [DEBUG] - Astra.Browser - JS: [Astra] Settings already present in Store.
+2026-02-22 12:03:08,711 - [INFO] - Astra.Protocol - [Bridge] [Astra] Settings already present in Store.
+2026-02-22 12:03:08,711 - [DEBUG] - Astra.Browser - JS: [Astra] Heuristic miss: PrivacySettings
+2026-02-22 12:03:08,711 - [INFO] - Astra.Protocol - [Bridge] [Astra] Heuristic miss: PrivacySettings
+2026-02-22 12:03:08,712 - [DEBUG] - Astra.Browser - JS: [Astra] Heuristic miss: Polls
+2026-02-22 12:03:08,712 - [INFO] - Astra.Protocol - [Bridge] [Astra] Heuristic miss: Polls
+2026-02-22 12:03:08,713 - [DEBUG] - Astra.Browser - JS: [Astra] Heuristic miss: BlockAction
+2026-02-22 12:03:08,713 - [INFO] - Astra.Protocol - [Bridge] [Astra] Heuristic miss: BlockAction
+2026-02-22 12:03:08,713 - [DEBUG] - Astra.Browser - JS: [Astra] Heuristic miss: AccountUtils
+2026-02-22 12:03:08,713 - [INFO] - Astra.Protocol - [Bridge] [Astra] Heuristic miss: AccountUtils
+2026-02-22 12:03:08,714 - [DEBUG] - Astra.Browser - JS: [Astra] GroupInvite already present in Store.
+2026-02-22 12:03:08,714 - [INFO] - Astra.Protocol - [Bridge] [Astra] GroupInvite already present in Store.
+2026-02-22 12:03:08,714 - [DEBUG] - Astra.Browser - JS: [Astra] Heuristic miss: GroupInviteV4
+2026-02-22 12:03:08,714 - [INFO] - Astra.Protocol - [Bridge] [Astra] Heuristic miss: GroupInviteV4
+2026-02-22 12:03:08,715 - [DEBUG] - Astra.Browser - JS: [Astra] Heuristic miss: WAGroupInviteQuery
+2026-02-22 12:03:08,715 - [INFO] - Astra.Protocol - [Bridge] [Astra] Heuristic miss: WAGroupInviteQuery
+2026-02-22 12:03:08,716 - [DEBUG] - Astra.Browser - JS: [Astra] GroupParticipants already present in Store.
+2026-02-22 12:03:08,716 - [INFO] - Astra.Protocol - [Bridge] [Astra] GroupParticipants already present in Store.
+2026-02-22 12:03:08,716 - [DEBUG] - Astra.Browser - JS: [Astra] GroupUtils already present in Store.
+2026-02-22 12:03:08,716 - [INFO] - Astra.Protocol - [Bridge] [Astra] GroupUtils already present in Store.
+2026-02-22 12:03:08,717 - [DEBUG] - Astra.Browser - JS: [Astra] Message pipeline hooked (Elite V24).
+2026-02-22 12:03:08,717 - [INFO] - Astra.Protocol - [Bridge] [Astra] Message pipeline hooked (Elite V24).
+2026-02-22 12:03:21,188 - [DEBUG] - Astra.Auth - Still waiting for login UI to stabilize...
+2026-02-22 12:03:25,195 - [ERROR] - Astra - Startup failed: [E2005] The browser page is no longer available.
+ → Hint: The browser might have crashed. Astra will attempt to reconnect.
+Traceback (most recent call last):
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/client/client.py", line 237, in start
+    await self.authenticator.login()
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/client/authenticator.py", line 69, in login
+    state = await self._detect_state()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/client/authenticator.py", line 134, in _detect_state
+    page = self._controller.page
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/connection/browser_manager.py", line 256, in page
+    raise ConnectionLostError("The browser page is no longer available.")
+astra.errors.exceptions.ConnectionLostError: [E2005] The browser page is no longer available.
+ → Hint: The browser might have crashed. Astra will attempt to reconnect.
+2026-02-22 12:03:25,197 - [INFO] - Astra.Status - Client state changed: AUTHENTICATING -> FAILED
+2026-02-22 12:03:25,197 - [INFO] - Astra - Shutting down...
+2026-02-22 12:03:25,197 - [INFO] - Astra.Status - Client state changed: FAILED -> SHUTTING_DOWN
+2026-02-22 12:03:25,198 - [INFO] - Astra.Sync - SyncEngine stopped.
+2026-02-22 12:03:25,199 - [DEBUG] - Astra.SessionStore - SessionStore closed.
+2026-02-22 12:03:25,199 - [INFO] - Astra.Browser - Stopping browser engine...
+2026-02-22 12:03:25,215 - [CRITICAL] - Astra.Browser - Detecting browser shutdown!
+2026-02-22 12:03:25,270 - [INFO] - Astra.Status - Client state changed: SHUTTING_DOWN -> OFFLINE
+2026-02-22 12:03:25,270 - [INFO] - Astra - Offline.
+2026-02-22 12:03:25,271 - [CRITICAL] - AstraBot - FATAL: Application crashed: [E2008] Failed to start Astra: [E2005] The browser page is no longer available.
+ → Hint: The browser might have crashed. Astra will attempt to reconnect.
+ → Hint: Check the error log for details. Usually a browser or auth issue.
+Traceback (most recent call last):
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/client/client.py", line 237, in start
+    await self.authenticator.login()
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/client/authenticator.py", line 69, in login
+    state = await self._detect_state()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/client/authenticator.py", line 134, in _detect_state
+    page = self._controller.page
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/connection/browser_manager.py", line 256, in page
+    raise ConnectionLostError("The browser page is no longer available.")
+astra.errors.exceptions.ConnectionLostError: [E2005] The browser page is no longer available.
+ → Hint: The browser might have crashed. Astra will attempt to reconnect.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/paman7647/ASTRAUB/astra_userbot_test/bot.py", line 192, in <module>
+    asyncio.run(main())
+    ~~~~~~~~~~~^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/Users/paman7647/ASTRAUB/astra_userbot_test/bot.py", line 186, in main
+    async with client:
+               ^^^^^^
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/client/client.py", line 135, in __aenter__
+    await self.start()
+  File "/Users/paman7647/Downloads/whatsapp-web.js-main/astra/client/client.py", line 271, in start
+    raise StartupError(f"Failed to start Astra: {e}", cause=e)
+astra.errors.exceptions.StartupError: [E2008] Failed to start Astra: [E2005] The browser page is no longer available.
+ → Hint: The browser might have crashed. Astra will attempt to reconnect.
+ → Hint: Check the error log for details. Usually a browser or auth issue.

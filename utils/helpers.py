@@ -10,7 +10,7 @@
 Collection of utility functions and classes to assist with common bot operations.
 Includes media handling, rate limiting, and reporting mechanisms.
 """
-
+import time
 import os
 import shutil
 import asyncio
@@ -109,6 +109,8 @@ async def smart_reply(message: Message, content: str, **kwargs):
         # Fallback to standard reply if edit fails (e.g., message already deleted or too old).
         return await message.reply(content, **kwargs)
 
+
+
 def get_progress_bar(pct: float, length: int = 15) -> str:
     """
     Generates a visual progress bar string.
@@ -155,6 +157,35 @@ async def report_error(client, exc: Exception, context: str = ""):
         return True
     except Exception:
         return False
+
+async def get_contact_name(client, jid: str) -> str:
+    """
+    Priority-based name resolution for any JID.
+    Priority: Pushname > Contact Name > Formatted Number > Short JID
+    """
+    try:
+        from astra.models import JID
+        jid_obj = JID.parse(jid) if isinstance(jid, str) else jid
+        
+        # Check if it's "Me" (LID or User ID matches)
+        me = await client.get_me()
+        if jid_obj.primary == me.id.primary:
+            return "Me"
+
+        clean_jid = jid_obj.primary
+        contact = await client.get_contact(clean_jid)
+        
+        # Priority Logic
+        if contact.push_name: return contact.push_name
+        if contact.name: return contact.name
+        
+        # Fallback to number or JID
+        user_part = clean_jid.split('@')[0]
+        return f"+{user_part}" if user_part.isdigit() else user_part[:10]
+    except Exception:
+        # Hard fallback
+        user_part = str(jid).split('@')[0]
+        return f"+{user_part}" if user_part.isdigit() else user_part[:10]
 
 # Exported Singletons
 # ------------------

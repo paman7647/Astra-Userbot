@@ -7,13 +7,14 @@
 # -----------------------------------------------------------
 
 from . import *
-
+import time
+from . import *
 @astra_command(
     name="help",
     aliases=["h", "menu"],
     description="List all commands or get help for a specific one.",
     category="Utility",
-    usage="[command]",
+    usage="[command] (optional, e.g. ping)",
     is_public=True
 )
 async def help_handler(client: Client, message: Message):
@@ -47,10 +48,8 @@ async def help_handler(client: Client, message: Message):
                     break
             
             if not cmd:
-                try:
-                    return await status_msg.edit(f"❌ Command `{cmd_query}` not found.")
-                except:
-                    return await message.reply(f"❌ Command `{cmd_query}` not found.")
+                time.sleep(0.5)
+                return await status_msg.edit(f"❌ Command `{cmd_query}` not found.")
             
             # Compose detailed help
             help_text = f"📖 *Help:* `{curr_prefix}{cmd['name']}`\n"
@@ -60,10 +59,9 @@ async def help_handler(client: Client, message: Message):
             help_text += f"*Category:* {cmd.get('category', 'General')}\n"
             help_text += f"*Usage:* `{curr_prefix}{cmd['name']} {cmd.get('usage', '')}`".strip()
             
-            try:
-                return await status_msg.edit(help_text)
-            except:
-                return await message.reply(help_text)
+            # standard edit handles the message
+            time.sleep(0.5)
+            return await status_msg.edit(help_text)
 
         # Get category grouping for main menu
         categories = {}
@@ -85,10 +83,8 @@ async def help_handler(client: Client, message: Message):
         
         help_text += f"💡 Use `{curr_prefix}help <cmd>` for details."
         
-        try:
-            await status_msg.edit(help_text)
-        except:
-            await message.reply(help_text)
+        time.sleep(0.5)
+        await status_msg.edit(help_text)
 
     except Exception as e:
         logger.error(f"Help command failed: {e}", exc_info=True)

@@ -20,7 +20,7 @@ from . import *
     description="Challenge the group with a quick randomized math problem.",
     category="Fun/Lite",
     aliases=["mq"],
-    usage="",
+    usage=".mathquiz (no arguments)",
     is_public=True
 )
 async def mathquiz_handler(client: Client, message: Message):

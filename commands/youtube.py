@@ -15,14 +15,14 @@ import random
 import time
 from . import *
 from config import config
-from utils.helpers import get_progress_bar
+from utils.helpers import get_progress_bar, safe_edit
 
 @astra_command(
     name="youtube",
     description="Download media from YouTube (Audio or Video).",
     category="Media",
     aliases=["yt", "ytdl"],
-    usage="<url> [video|audio] [--doc]",
+    usage="<url> [video|audio] [--doc] (e.g. .youtube <link> video)",
     owner_only=False
 )
 async def youtube_handler(client: Client, message: Message):
@@ -76,16 +76,14 @@ async def youtube_handler(client: Client, message: Message):
             # 1. Capture Metadata
             if line_str.startswith("METADATA:"):
                 metadata.update(json.loads(line_str.replace("METADATA:", "")))
-                try:
-                    await status_msg.edit(
-                        f"✨ *{metadata['title']}*\n"
-                        f"🌐 *Platform:* {metadata['platform']}\n"
-                        f"📂 *Mode:* {mode.capitalize()}\n\n"
-                        f"⏳ *Preparing download...*"
-                    )
-                except: pass
-                continue
-
+                # use helper which includes the delay + fallback
+                await safe_edit(
+                    status_msg,
+                    f"✨ *{metadata['title']}*\n"
+                    f"🌐 *Platform:* {metadata['platform']}\n"
+                    f"📂 *Mode:* {mode.capitalize()}\n\n"
+                    f"⏳ *Preparing download...*"
+                )
             # 2. Capture Progress
             if "[download]" in line_str and "%" in line_str:
                 match = re.search(r"(\d+\.\d+)% of\s+([\d\.]+\w+)\s+at\s+([\d\.]+\w+/s)\s+ETA\s+(\d+:\d+)", line_str)
@@ -96,17 +94,16 @@ async def youtube_handler(client: Client, message: Message):
                     current_time = time.time()
                     if current_time - last_update_time > 2.0 or pct >= 100:
                         bar = get_progress_bar(pct)
-                        try:
-                            await status_msg.edit(
-                                f"✨ *{metadata['title']}*\n"
-                                f"🌐 *Platform:* {metadata['platform']}\n\n"
-                                f"📥 *Downloading:* {bar}\n"
-                                f"📋 *Size:* `{size}`\n"
-                                f"⚡ *Speed:* `{speed}`\n"
-                                f"⏳ *Remaining:* `{eta}`"
-                            )
-                            last_update_time = current_time
-                        except: pass
+                        await safe_edit(
+                            status_msg,
+                            f"✨ *{metadata['title']}*\n"
+                            f"🌐 *Platform:* {metadata['platform']}\n\n"
+                            f"📥 *Downloading:* {bar}\n"
+                            f"📋 *Size:* `{size}`\n"
+                            f"⚡ *Speed:* `{speed}`\n"
+                            f"⏳ *Remaining:* `{eta}`"
+                        )
+                        last_update_time = current_time
 
             # 3. Capture Success
             if line_str.startswith("SUCCESS:"):
@@ -118,10 +115,7 @@ async def youtube_handler(client: Client, message: Message):
         if process.returncode != 0:
             stderr = await process.stderr.read()
             err_log = stderr.decode(errors='ignore')[:500]
-            return await status_msg.edit(f" ❌ Media Core Error:\n```{err_log}```")
-
-        if not files:
-            return await status_msg.edit(" ❌ Download failed: No files retrieved.")
+            return await safe_edit(status_msg, f" ❌ Media Core Error:\n```{err_log}```")
 
         file_path = files[0]
         file_size = os.path.getsize(file_path)
@@ -154,15 +148,14 @@ async def youtube_handler(client: Client, message: Message):
             else:
                 speed_text = "Checking..."
 
-            try:
-                await status_msg.edit(
-                    f"✨ *{metadata['title']}*\n"
-                    f"🌐 *Platform:* {metadata['platform']}\n\n"
-                    f"📤 *Uploading:* {bar}\n"
-                    f"⚡ *Speed:* `{speed_text}`"
-                )
-                upload_last_update = now
-            except: pass
+            await safe_edit(
+                status_msg,
+                f"✨ *{metadata['title']}*\n"
+                f"🌐 *Platform:* {metadata['platform']}\n\n"
+                f"📤 *Uploading:* {bar}\n"
+                f"⚡ *Speed:* `{speed_text}`"
+            )
+            upload_last_update = now
 
         try:
             if mode == "audio":
@@ -173,16 +166,7 @@ async def youtube_handler(client: Client, message: Message):
             
             await status_msg.delete()
         except Exception as e:
-            # Fallback to general file send as document
-            try:
-                await status_msg.edit(f"✨ *{metadata['title']}*\n🔄 *Finalizing delivery...*")
-                await client.send_file(message.chat_id, file_path, document=True, caption=caption, reply_to=message.id)
-                await status_msg.delete()
-            except Exception as final_err:
-                try:
-                    await status_msg.edit(f" ❌ Delivery failed: {str(final_err)}")
-                except:
-                    await message.reply(f" ❌ Delivery failed: {str(final_err)}")
+            await safe_edit(status_msg, f" ❌ Delivery failed: {str(e)}")
 
         # Cleanup
         if os.path.exists(file_path):

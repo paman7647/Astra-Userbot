@@ -21,7 +21,7 @@ from . import *
     description="Flood the chat with messages.",
     category="Spam",
     aliases=[],
-    usage="<count> <text>",
+    usage="<count> <text> (e.g. .spam 5 hello)",
     owner_only=True # Safety: Only owner/sudo can spam
 )
 async def spam_handler(client: Client, message: Message):
@@ -57,7 +57,7 @@ async def spam_handler(client: Client, message: Message):
     description="Flood the chat with delayed messages.",
     category="Spam",
     aliases=["delayspam"],
-    usage="<delay_sec> <count> <text>",
+    usage="<delay_sec> <count> <text> (e.g. .dspam 1 5 hi)",
     owner_only=True
 )
 async def dspam_handler(client: Client, message: Message):

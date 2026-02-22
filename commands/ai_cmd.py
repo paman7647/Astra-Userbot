@@ -15,7 +15,7 @@ from . import *
     description="Chat with Google Gemini AI",
     category="AI",
     aliases=["chat", "ask", "gemini"],
-    usage="<prompt>",
+    usage="<prompt> (e.g. 'Hello AI!')",
     owner_only=False
 )
 async def ai_handler(client: Client, message: Message):
@@ -49,14 +49,9 @@ async def ai_handler(client: Client, message: Message):
         response = await asyncio.to_thread(gen_client.models.generate_content, model='gemini-3-flash-preview', contents=prompt)
 
         if response and response.text:
-            try:
-                await status_msg.edit(response.text)
-            except:
-                await message.reply(response.text)
+            await status_msg.edit(response.text)
         else:
-            try:
-                await status_msg.edit(" AI returned an empty response.")
-            except: pass
+            await status_msg.edit(" AI returned an empty response.")
     except Exception as e:
         await smart_reply(message, f" ❌ Error: {str(e)}")
         await report_error(client, e, context='Command ai failed')
