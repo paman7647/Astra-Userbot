@@ -16,13 +16,11 @@ developers who need power, modularity, and efficiency.
 
 Deploy Astra Userbot instantly on your preferred platform:
 
--   Railway: [https://railway.app/new](https://railway.app/deploy?repo=paman7647/Astra-Userbot)
--   Heroku:
-    https://heroku.com/deploy?template=https://github.com/paman7647/Astra-Userbot
--   Render: https://render.com/deploy
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new)
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/paman7647/Astra-Userbot)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
-For Localhost, Docker, and VPS setups, refer to the **Deployment Guide
-(DEPLOYMENT.md)**.
+For Localhost, Docker, and VPS setups, refer to the **Deployment Guide (DEPLOYMENT.md)**.
 
 ------------------------------------------------------------------------
 
