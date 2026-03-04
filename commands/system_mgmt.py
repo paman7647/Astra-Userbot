@@ -112,9 +112,7 @@ async def update_cmd(client: Client, message: Message):
             update_prompt = (
                 f"🚀 **Astra Update Engine**\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
-                f" Updates available.
-
-"
+                f"✨ **Updates available.**\n\n"
                 f"📂 **Branch:** `{branch}`\n"
                 f"👤 **Author:** `{author_name}`\n"
                 f"🕒 **Checked at:** `{time.strftime('%H:%M:%S')}`\n\n"
