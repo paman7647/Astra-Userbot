@@ -12,6 +12,8 @@ import os
 from . import *
 from utils.helpers import handle_command_error
 
+import urllib.parse
+
 @astra_command(
     name="txtimg",
     description="Convert plain text into a beautiful image card.",
@@ -28,13 +30,13 @@ async def txtimg_handler(client: Client, message: Message):
     status_msg = await smart_reply(message, "✨ **Astra Creative Studio**\n━━━━━━━━━━━━━━━━━━━━\n🎨 *Rendering your text card...*")
 
     try:
-        # Using a reliable free API for text-to-image (Pollinations or similar)
-        # We can also use a custom HTML/CSS renderer via a public service
-        url = "https://image.pollinations.ai/prompt/"
+        # Using a reliable free API for text-to-image
+        base_url = "https://image.pollinations.ai/prompt/"
         prompt = f"A beautiful typography card with the text: '{text}'. centered, professional, clean, high resolution, soft background."
+        encoded_prompt = urllib.parse.quote(prompt)
         
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{url}{prompt}") as resp:
+            async with session.get(f"{base_url}{encoded_prompt}") as resp:
                 if resp.status == 200:
                     image_data = await resp.read()
                     b64_data = base64.b64encode(image_data).decode('utf-8')

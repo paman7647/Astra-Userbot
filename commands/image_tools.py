@@ -15,7 +15,7 @@ from utils.helpers import handle_command_error
 async def apply_filter(client: Client, message: Message, filter_type: str):
     """Generic image filter applier."""
     target = message.quoted if message.has_quoted_msg else message
-    if not target or not target.is_media or not target.mimetype or not target.mimetype.startswith("image"):
+    if not target or not target.is_media or target.type != MessageType.IMAGE:
         return await smart_reply(message, "🖼️ **Image Tools**\n━━━━━━━━━━━━━━━━━━━━\n❌ **Reply to an image** to apply this filter.")
 
     status_msg = await smart_reply(message, f"🎨 **Astra Creative Studio**\n━━━━━━━━━━━━━━━━━━━━\n✨ *Applying {filter_type} filter...*")
