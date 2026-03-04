@@ -1,4 +1,4 @@
-astra-engine>=0.0.3b2
+git+https://github.com/paman7647/Astra.git@dev
 python-dotenv>=1.0.0
 google-genai>=0.2.2
 aiohttp>=3.9.0
