@@ -115,13 +115,21 @@ async def update_cmd(client: Client, message: Message):
             )
             diff_text, _ = await proc_diff.communicate()
             
+            # Fetch Author
+            proc_author = await asyncio.create_subprocess_exec(
+                'git', 'log', '-1', '--format=%an', f'origin/{branch}',
+                stdout=asyncio.subprocess.PIPE
+            )
+            author_text, _ = await proc_author.communicate()
+            author_name = author_text.decode().strip() or "Unknown Dev"
+            
             summary = diff_text.decode().strip() or "No commit summary available."
             update_prompt = (
                 f"🚀 **Astra Update Engine**\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
                 f"✨ **New Updates Found!**\n\n"
                 f"📂 **Branch:** `{branch}`\n"
-                f"👤 **Author:** `Aman Kumar Pandey`\n"
+                f"👤 **Author:** `{author_name}`\n"
                 f"🕒 **Checked at:** `{time.strftime('%H:%M:%S')}`\n\n"
                 f"📋 **Latest Changes:**\n```\n{summary}```\n\n"
                 f"⚠️ *Run `.update -f` to apply these changes and restart.*"
