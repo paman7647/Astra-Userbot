@@ -60,7 +60,6 @@ class AstraBridge:
             js_fallback = f"""
             (async () => {{
                 const msgId = "{mid}";
-                const Store = window.Astra.initializeEngine();
                 
                 // Try to find the blob in DOM
                 let el = document.querySelector(`div[data-id="${{msgId}}"] img, div[data-id="${{msgId}}"] video`);
@@ -73,11 +72,12 @@ class AstraBridge:
                 if (el && el.src && el.src.startsWith('blob:')) {{
                     const res = await fetch(el.src);
                     const blob = await res.blob();
-                    const buf = await blob.arrayBuffer();
-                    const arr = new Uint8Array(buf);
-                    let binary = '';
-                    for (let i = 0; i < arr.byteLength; i++) binary += String.fromCharCode(arr[i]);
-                    return window.btoa(binary);
+                    return await new Promise((resolve, reject) => {{
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    }});
                 }}
                 return null;
             }})()
