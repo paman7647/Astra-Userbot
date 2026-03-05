@@ -22,7 +22,7 @@ async def lock_handler(client: Client, message: Message):
         return await edit_or_reply(message, "⚠️ **Usage:** `.lock <send|add|info|all>`")
 
     target = args[0].lower()
-    api = client._engine_api
+    api = client.api
     gid = message.chat_id
     status = await edit_or_reply(message, "🔒 Locking...")
 
@@ -57,7 +57,7 @@ async def unlock_handler(client: Client, message: Message):
         return await edit_or_reply(message, "⚠️ **Usage:** `.unlock <send|add|info|all>`")
 
     target = args[0].lower()
-    api = client._engine_api
+    api = client.api
     gid = message.chat_id
     status = await edit_or_reply(message, "🔓 Unlocking...")
 
@@ -94,7 +94,7 @@ async def setsubject_handler(client: Client, message: Message):
 
     name = " ".join(args)
     try:
-        await client._engine_api.set_group_subject(message.chat_id, name)
+        await client.api.set_group_subject(message.chat_id, name)
         await edit_or_reply(message, f"✅ Group name changed to: **{name}**")
     except Exception as e:
         await edit_or_reply(message, f"❌ Failed: {e}")
@@ -119,7 +119,7 @@ async def setdesc_handler(client: Client, message: Message):
 
     desc = " ".join(args)
     try:
-        await client._engine_api.set_group_description(message.chat_id, desc)
+        await client.api.set_group_description(message.chat_id, desc)
         await edit_or_reply(message, "✅ Group description updated.")
     except Exception as e:
         await edit_or_reply(message, f"❌ Failed: {e}")
@@ -139,7 +139,7 @@ async def joinreqs_handler(client: Client, message: Message):
         return await edit_or_reply(message, "⚠️ Groups only.")
 
     args = extract_args(message)
-    api = client._engine_api
+    api = client.api
     gid = message.chat_id
 
     try:
@@ -186,7 +186,7 @@ async def revoke_handler(client: Client, message: Message):
         return await edit_or_reply(message, "⚠️ Groups only.")
 
     try:
-        new_link = await client._engine_api.revoke_invite(message.chat_id)
+        new_link = await client.api.revoke_invite(message.chat_id)
         await edit_or_reply(message, f"🔗 Invite link revoked.\n\nNew link: {new_link}")
     except Exception as e:
         await edit_or_reply(message, f"❌ Failed: {e}")

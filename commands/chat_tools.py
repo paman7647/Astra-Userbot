@@ -16,7 +16,7 @@ from . import *
 async def pinchat_handler(client: Client, message: Message):
     """Pins or unpins a chat."""
     args = extract_args(message)
-    api = client._engine_api
+    api = client.api
     unpin = (args and args[0].lower() == "unpin") or message.command_name == "unpin"
 
     try:
@@ -44,7 +44,7 @@ async def clearchat_handler(client: Client, message: Message):
     """Clears all messages in the current chat."""
     status = await edit_or_reply(message, "🗑️ Clearing chat...")
     try:
-        await client._engine_api.clear_chat(message.chat_id)
+        await client.api.clear_chat(message.chat_id)
         await status.edit("✅ Chat cleared.")
     except Exception as e:
         await status.edit(f"❌ Failed: {e}")
@@ -60,7 +60,7 @@ async def clearchat_handler(client: Client, message: Message):
 async def delchat_handler(client: Client, message: Message):
     """Deletes the current chat."""
     try:
-        await client._engine_api.delete_chat(message.chat_id)
+        await client.api.delete_chat(message.chat_id)
     except Exception as e:
         await edit_or_reply(message, f"❌ Failed: {e}")
 
@@ -83,7 +83,7 @@ async def numcheck_handler(client: Client, message: Message):
     status = await edit_or_reply(message, f"🔍 Checking {number}...")
 
     try:
-        result = await client._engine_api.get_number_id(number)
+        result = await client.api.get_number_id(number)
         if result:
             wid = result.get("_serialized", result.get("user", number))
             await status.edit(f"✅ **{number}** is on WhatsApp.\nWID: `{wid}`")
@@ -118,7 +118,7 @@ async def commongroups_handler(client: Client, message: Message):
     status = await edit_or_reply(message, "🔍 Finding common groups...")
 
     try:
-        groups = await client._engine_api.get_common_groups(contact_id)
+        groups = await client.api.get_common_groups(contact_id)
         if not groups:
             return await status.edit(f"📋 No common groups with {contact_id.split('@')[0]}.")
 
@@ -151,7 +151,7 @@ async def search_handler(client: Client, message: Message):
     status = await edit_or_reply(message, f"🔍 Searching for: _{query}_...")
 
     try:
-        results = await client._engine_api.search_messages(query, chat_id=message.chat_id, limit=10)
+        results = await client.api.search_messages(query, chat_id=message.chat_id, limit=10)
         if not results:
             return await status.edit(f"📋 No messages found for: _{query}_")
 
@@ -187,7 +187,7 @@ async def presence_handler(client: Client, message: Message):
         return await edit_or_reply(message, "⚠️ **Usage:** `.presence <on|off>`")
 
     try:
-        await client._engine_api.send_presence(available)
+        await client.api.send_presence(available)
         state = "online" if available else "offline"
         await edit_or_reply(message, f"✅ Presence set to **{state}**.")
     except Exception as e:
@@ -204,7 +204,7 @@ async def presence_handler(client: Client, message: Message):
 async def archive_handler(client: Client, message: Message):
     """Archives the current chat."""
     try:
-        await client._engine_api.archive_chat(message.chat_id)
+        await client.api.archive_chat(message.chat_id)
         await edit_or_reply(message, "📦 Chat archived.")
     except Exception as e:
         await edit_or_reply(message, f"❌ Failed: {e}")
@@ -232,7 +232,7 @@ async def forward_handler(client: Client, message: Message):
         target = f"{target}@c.us"
 
     try:
-        await client._engine_api.forward_message(target, message.quoted.id)
+        await client.api.forward_message(target, message.quoted.id)
         await edit_or_reply(message, f"↗️ Forwarded to `{target.split('@')[0]}`")
     except Exception as e:
         await edit_or_reply(message, f"❌ Failed: {e}")
@@ -261,7 +261,7 @@ async def profilepic_handler(client: Client, message: Message):
             contact_id = message.chat_id
 
     try:
-        url = await client._engine_api.get_profile_pic_url(contact_id)
+        url = await client.api.get_profile_pic_url(contact_id)
         if url:
             await edit_or_reply(message, f"🖼️ **Profile Picture:**\n{url}")
         else:
