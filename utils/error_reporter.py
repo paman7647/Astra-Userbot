@@ -1,12 +1,11 @@
 """
 Astra Error Reporter
 --------------------
-Centralized error reporting system with auto-created WhatsApp group.
-All system notifications (errors, alerts, boot messages) are sent to
-the group first, falling back to owner DM only if group delivery fails.
+Centralized error reporting with auto-created WhatsApp group.
+All errors and system notifications go to the group first,
+falling back to owner DM only if group delivery fails.
 """
 
-import asyncio
 import logging
 import platform
 import sys
@@ -18,40 +17,33 @@ from utils.database import db
 
 logger = logging.getLogger("Astra.ErrorReporter")
 
-# Rate limiter to prevent error spam loops
 _error_timestamps = []
 _MAX_ERRORS_PER_MIN = 5
 
 
 class ErrorReporter:
-    """Singleton error reporter with auto-group creation."""
 
     _group_id: Optional[str] = None
-    _init_lock = asyncio.Lock() if hasattr(asyncio, "Lock") else None
     _initialized = False
 
     @classmethod
     async def initialize(cls, client):
         """
-        Called on bot startup. Creates the error log group if it doesn't
-        exist in DB yet. Skips entirely if group ID is already stored.
+        Called on bot startup. Creates the error log group if not in DB.
+        Skips entirely if group ID already exists in the database.
         """
         if cls._initialized:
             return
 
-        # Check DB first — skip creation if we already have a group
         stored = await db.get("error_log_group_id")
         if stored:
             cls._group_id = stored
             cls._initialized = True
-            logger.info(f"Error log group loaded from DB: {stored}")
             return
 
-        # No group in DB — create one
         try:
             me = await client.get_me()
             my_jid = me.id.serialized if hasattr(me.id, "serialized") else str(me.id)
-
             gid = await client.group.create("「Astra」Error Logs", [my_jid])
 
             if gid:
@@ -74,7 +66,7 @@ class ErrorReporter:
                 except:
                     pass
 
-                logger.info(f"Auto-created error log group: {gid}")
+                logger.info(f"Created error log group: {gid}")
         except Exception as e:
             logger.warning(f"Failed to create error log group: {e}")
 
@@ -82,19 +74,14 @@ class ErrorReporter:
 
     @classmethod
     async def _ensure_group(cls, client) -> Optional[str]:
-        """Get or create the error log group. Cached after first call."""
         if cls._group_id:
             return cls._group_id
-
-        # If initialize wasn't called yet, do it now
         if not cls._initialized:
             await cls.initialize(client)
-
         return cls._group_id
 
     @classmethod
     async def _send_to_group(cls, client, text: str) -> bool:
-        """Try sending to the error group. Returns True on success."""
         gid = await cls._ensure_group(client)
         if not gid:
             return False
@@ -107,28 +94,22 @@ class ErrorReporter:
 
     @classmethod
     async def _send_to_owner(cls, client, text: str) -> bool:
-        """Fallback: send to owner DM."""
         try:
             from config import config
-            owner_ids = getattr(client, "owner_ids", [])
-            if not owner_ids and config.OWNER_ID:
-                owner_ids = [config.OWNER_ID]
-            for oid in owner_ids:
-                try:
-                    await client.chat.send_message(str(oid), text)
-                    return True
-                except:
-                    continue
-        except:
-            pass
+            if not config.OWNER_ID:
+                return False
+            owner_id = str(config.OWNER_ID)
+            if "@" not in owner_id:
+                owner_id = f"{owner_id}@s.whatsapp.net"
+            await client.chat.send_message(owner_id, text)
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to send to owner DM: {e}")
         return False
 
     @classmethod
     async def send(cls, client, text: str):
-        """
-        Send a message to the error group first.
-        Falls back to owner DM if group delivery fails.
-        """
+        """Send to error group first. Falls back to owner DM."""
         if await cls._send_to_group(client, text):
             return True
         return await cls._send_to_owner(client, text)
@@ -136,13 +117,11 @@ class ErrorReporter:
     @classmethod
     async def report(cls, client, message, exc: Exception, context: str = "Command Failure"):
         """
-        Full error report: sends rich diagnostics ONLY to the error log group
-        (or owner DM fallback). The user in the original chat only sees a
-        clean notification that an error was reported.
+        Send full error diagnostics to group/DM ONLY.
+        User in the original chat sees a clean one-liner.
         """
         from utils.helpers import smart_reply
 
-        # Rate limiting
         global _error_timestamps
         now = time.time()
         _error_timestamps = [t for t in _error_timestamps if now - t < 60]
@@ -150,7 +129,6 @@ class ErrorReporter:
             return
         _error_timestamps.append(now)
 
-        # Build diagnostic report (ONLY for group/DM)
         tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
         chat_info = ""
@@ -178,13 +156,13 @@ class ErrorReporter:
             f"*Stack Trace:*\n```\n{tb[:1500]}\n```"
         )
 
-        # Send full details ONLY to error group or owner DM
+        # Full details ONLY to group or DM
         sent_to_group = await cls._send_to_group(client, report_text)
         sent_to_dm = False
         if not sent_to_group:
             sent_to_dm = await cls._send_to_owner(client, report_text)
 
-        # Tell the user in the original chat — clean one-liner, no details
+        # Clean one-liner to the user in chat
         try:
             if sent_to_group:
                 dest = "error log group"
@@ -192,28 +170,18 @@ class ErrorReporter:
                 dest = "owner DM"
             else:
                 dest = "logs"
-
-            await smart_reply(
-                message,
-                f"⚠️ *An error occurred.* Details reported to *{dest}*."
-            )
+            await smart_reply(message, f"⚠️ *An error occurred.* Details reported to *{dest}*.")
         except:
             pass
 
     @classmethod
-    async def notify(cls, client, text: str):
-        """
-        Send a system notification (boot, shutdown, etc.) to the group.
-        Falls back to owner DM.
-        """
-        await cls.send(client, text)
-
-    @classmethod
     async def boot_message(cls, client, plugin_count: int = 0):
-        """Send a boot notification to the error log group."""
+        """Send startup notification to error group (or DM fallback)."""
         from config import config
 
-        boot_text = (
+        custom_msg = await db.get("STARTUP_MESSAGE")
+
+        boot_text = custom_msg or (
             f"✅ *Astra Userbot Online*\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"*Version:* `{config.VERSION}`\n"
@@ -224,12 +192,16 @@ class ErrorReporter:
         )
         await cls.send(client, boot_text)
 
+    @classmethod
+    async def notify(cls, client, text: str):
+        """Send a system notification to the group (or DM fallback)."""
+        await cls.send(client, text)
+
 
 # Convenience aliases
 error_reporter = ErrorReporter
 
 async def report_error(client, exc, context=""):
-    """Legacy compat wrapper."""
     await ErrorReporter.send(client, (
         f"🚨 *Astra System Alert*\n\n"
         f"*Context:* `{context}`\n"
@@ -239,5 +211,4 @@ async def report_error(client, exc, context=""):
     ))
 
 async def handle_command_error(client, message, exc, context="Command Failure"):
-    """Legacy compat wrapper used by individual commands."""
     await ErrorReporter.report(client, message, exc, context=context)
