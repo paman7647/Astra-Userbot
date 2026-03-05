@@ -47,7 +47,7 @@ async def afk_mention_responder(client: Client, message: Message):
         if f"@{my_num}" in (message.body or ""):
             is_tagged = True
 
-        if not message.is_group or is_tagged:
+        if not str(message.chat_id).endswith("@g.us") or is_tagged:
             await smart_reply(
                 message, f"🌙 **Astra User is AFK**\n━━━━━━━━━━━━━━━━━━━━\n💬 **Reason:** `{afk_state['reason']}`"
             )

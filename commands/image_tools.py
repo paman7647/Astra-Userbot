@@ -9,8 +9,10 @@ from . import *
 
 async def apply_filter(client: Client, message: Message, filter_type: str):
     """Generic image filter applier."""
-    target = message.quoted if message.has_quoted_msg else message
-    if not target or not target.is_media or target.type != MessageType.IMAGE:
+    # Check if the message itself or a quoted message is an image
+    is_image = message.type == MessageType.IMAGE
+    has_quoted_image = message.has_quoted_msg and message.quoted_type == MessageType.IMAGE
+    if not is_image and not has_quoted_image:
         return await smart_reply(
             message, "🖼️ **Image Tools**\n━━━━━━━━━━━━━━━━━━━━\n❌ **Reply to an image** to apply this filter."
         )

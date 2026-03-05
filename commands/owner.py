@@ -64,7 +64,7 @@ async def setbio_handler(client: Client, message: Message):
     owner_only=True,
 )
 async def setpfp_handler(client: Client, message: Message):
-    if not message.has_quoted_msg or not message.quoted.is_media or "image" not in message.quoted.mimetype:
+    if not message.has_quoted_msg or not (message.quoted_type and message.quoted_type == MessageType.IMAGE):
         return await smart_reply(message, " ⚠️ Reply to an image to set it as your profile picture.")
 
     status_msg = await smart_reply(message, " ⏳ *Updating profile picture...*")
@@ -97,9 +97,9 @@ async def setpfp_handler(client: Client, message: Message):
     owner_only=True,
 )
 async def setgpic_handler(client: Client, message: Message):
-    if not message.is_group:
+    if not str(message.chat_id).endswith("@g.us"):
         return await smart_reply(message, " ❌ This command only works in groups.")
-    if not message.has_quoted_msg or not message.quoted.is_media or "image" not in message.quoted.mimetype:
+    if not message.has_quoted_msg or not (message.quoted_type and message.quoted_type == MessageType.IMAGE):
         return await smart_reply(message, " ⚠️ Reply to an image to set it as group picture.")
 
     status_msg = await smart_reply(message, " ⏳ *Updating group picture...*")

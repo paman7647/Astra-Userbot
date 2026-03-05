@@ -1,6 +1,8 @@
 import base64
+import io
+import time
 
-from utils.bridge_downloader import bridge_downloader
+from PIL import Image
 from utils.bridge_downloader import bridge_downloader
 
 from . import *
@@ -16,10 +18,7 @@ from . import *
 )
 async def sticker_handler(client: Client, message: Message):
     """Sticker creation plugin."""
-    quoted = message.quoted if message.has_quoted_msg else None
-    target = quoted if quoted and quoted.is_media else (message if message.is_media else None)
-
-    if not target:
+    if not message.has_quoted_msg and not message.is_media:
         return await smart_reply(message, "✨ Reply to an image or video to make a sticker.")
 
     status_msg = await smart_reply(message, "✨ **Making your sticker...**")
@@ -30,13 +29,12 @@ async def sticker_handler(client: Client, message: Message):
         return await status_msg.edit("❌ Failed to download media.")
 
     b64_data = base64.b64encode(media_data).decode("utf-8")
-    mimetype = target.mimetype or "image/webp"
 
     # Send as sticker
     await client.media.send_sticker(
-        message.chat_id.serialized,
+        str(message.chat_id),
         b64_data,
-        reply_to=target.id,
+        reply_to=message.id,
     )
 
     await status_msg.delete()
@@ -52,10 +50,7 @@ async def sticker_handler(client: Client, message: Message):
 )
 async def kang_handler(client: Client, message: Message):
     """Advanced sticker cloning/creation."""
-    quoted = message.quoted if message.has_quoted_msg else None
-    target = quoted if quoted and quoted.is_media else (message if message.is_media else None)
-
-    if not target:
+    if not message.has_quoted_msg and not message.is_media:
         return await smart_reply(message, "✨ Reply to a sticker, image, or video to kang it.")
 
     status_msg = await smart_reply(message, "✨ **Kanging your sticker...**")
@@ -83,9 +78,9 @@ async def kang_handler(client: Client, message: Message):
 
     # Send as sticker
     await client.media.send_sticker(
-        message.chat_id.serialized,
+        str(message.chat_id),
         b64_data,
-        reply_to=target.id,
+        reply_to=message.id,
     )
 
     await status_msg.delete()
@@ -100,20 +95,20 @@ async def kang_handler(client: Client, message: Message):
 )
 async def stkrinfo_handler(client: Client, message: Message):
     """Extract sticker metadata."""
-    quoted = message.quoted if message.has_quoted_msg else None
-    target = quoted if quoted and quoted.is_media else (message if message.is_media else None)
+    # Check if it's a sticker or has a quoted sticker
+    is_sticker = message.type == MessageType.STICKER
+    has_quoted_sticker = message.has_quoted_msg and message.quoted_type == MessageType.STICKER
 
-    if not target or target.type != MessageType.STICKER:
+    if not is_sticker and not has_quoted_sticker:
         return await smart_reply(message, "✨ Reply to a sticker to see its info.")
 
     info = f"🎭 **Sticker Metadata**\n━━━━━━━━━━━━━━━━━━━━\n"
-    info += f"🆔 **ID:** `{target.id}`\n"
-    info += f"📁 **Mime:** `{target.mimetype or 'image/webp'}`\n"
-    if target.size:
-        info += f"📦 **Size:** `{target.size // 1024} KB`\n"
-    info += f"🕒 **Time:** `{time.strftime('%H:%M:%S', time.localtime(target.timestamp))}`\n"
+    info += f"🆔 **ID:** `{message.id}`\n"
+    info += f"📁 **Mime:** `{message.mimetype or 'image/webp'}`\n"
+    if message.size:
+        info += f"📦 **Size:** `{message.size // 1024} KB`\n"
+    info += f"🕒 **Time:** `{time.strftime('%H:%M:%S', time.localtime(message.timestamp))}`\n"
 
-    # Extract further info from PIL if requested/available
     await smart_reply(message, info)
 
 
@@ -127,10 +122,10 @@ async def stkrinfo_handler(client: Client, message: Message):
 )
 async def stoi_handler(client: Client, message: Message):
     """Convert sticker to image."""
-    quoted = message.quoted if message.has_quoted_msg else None
-    target = quoted if quoted and quoted.is_media else (message if message.is_media else None)
+    is_sticker = message.type == MessageType.STICKER
+    has_quoted_sticker = message.has_quoted_msg and message.quoted_type == MessageType.STICKER
 
-    if not target or target.type != MessageType.STICKER:
+    if not is_sticker and not has_quoted_sticker:
         return await smart_reply(message, "✨ Reply to a sticker to convert it to an image.")
 
     status_msg = await smart_reply(message, "✨ **Converting to image...**")
@@ -146,7 +141,7 @@ async def stoi_handler(client: Client, message: Message):
     b64_data = base64.b64encode(out_buffer.getvalue()).decode("utf-8")
 
     media = {"mimetype": "image/jpeg", "data": b64_data, "filename": "sticker.jpg"}
-    await client.send_media(message.chat_id.serialized, media, caption="✨ Converted from Sticker")
+    await client.send_media(str(message.chat_id), media, caption="✨ Converted from Sticker")
     await status_msg.delete()
 
 
@@ -159,10 +154,10 @@ async def stoi_handler(client: Client, message: Message):
 )
 async def getstkr_handler(client: Client, message: Message):
     """Download sticker file."""
-    quoted = message.quoted if message.has_quoted_msg else None
-    target = quoted if quoted and quoted.is_media else (message if message.is_media else None)
+    is_sticker = message.type == MessageType.STICKER
+    has_quoted_sticker = message.has_quoted_msg and message.quoted_type == MessageType.STICKER
 
-    if not target or target.type != MessageType.STICKER:
+    if not is_sticker and not has_quoted_sticker:
         return await smart_reply(message, "✨ Reply to a sticker to get the file.")
 
     status_msg = await smart_reply(message, "✨ **Fetching sticker file...**")
@@ -174,7 +169,7 @@ async def getstkr_handler(client: Client, message: Message):
     b64_data = base64.b64encode(media_data).decode("utf-8")
     media = {"mimetype": "image/webp", "data": b64_data, "filename": "sticker.webp"}
 
-    await client.send_media(message.chat_id.serialized, media, document=True)
+    await client.send_media(str(message.chat_id), media, document=True)
     await status_msg.delete()
 
 

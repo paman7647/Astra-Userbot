@@ -29,9 +29,7 @@ def apply_framework_patches():
     original_edit = Message.edit
 
     async def patched_edit(self, text: str, **kwargs) -> bool:
-        import time
-        # Constant delay for stability
-        time.sleep(0.5)
+        # Engine already has 0.5s async delay built-in
         try:
             return await original_edit(self, text, **kwargs)
         except Exception:
