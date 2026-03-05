@@ -30,16 +30,16 @@ async def pmpermit_handler(client: Client, message: Message):
             f"▫️ `.pmpermit deny` - Revoke access\n"
             f"▫️ `.pmpermit list` - Show permitted users"
         )
-        return await smart_reply(message, help_text)
+        return await edit_or_reply(message, help_text)
 
     action = args_list[0].lower()
 
     if action == "on":
         state.set_config("ENABLE_PM_PROTECTION", True)
-        await smart_reply(message, "✅ **Astra PM Security:** Protection Enabled! 🛡️")
+        await edit_or_reply(message, "✅ **Astra PM Security:** Protection Enabled! 🛡️")
     elif action == "off":
         state.set_config("ENABLE_PM_PROTECTION", False)
-        await smart_reply(message, "🔓 **Astra PM Security:** Protection Disabled.")
+        await edit_or_reply(message, "🔓 **Astra PM Security:** Protection Disabled.")
     elif action in ["approve", "permit", "a"]:
         target_id = None
         if len(args_list) > 1:
@@ -51,7 +51,7 @@ async def pmpermit_handler(client: Client, message: Message):
             target_id = message.chat_id
 
         if not target_id:
-            return await smart_reply(
+            return await edit_or_reply(
                 message, "⚠️ **Astra PM Security:** Please provide a user ID or reply to a message."
             )
 
@@ -66,7 +66,7 @@ async def pmpermit_handler(client: Client, message: Message):
 
         state.permit_user(target_str)
         name = await get_contact_name(client, target_str)
-        await smart_reply(message, f"✅ **Astra PM Security:** `{name}` has been permitted to DM. 🛡️")
+        await edit_or_reply(message, f"✅ **Astra PM Security:** `{name}` has been permitted to DM. 🛡️")
 
     elif action in ["deny", "d"]:
         target_id = None
@@ -79,7 +79,7 @@ async def pmpermit_handler(client: Client, message: Message):
             target_id = message.chat_id
 
         if not target_id:
-            return await smart_reply(
+            return await edit_or_reply(
                 message, "⚠️ **Astra PM Security:** Please provide a user ID or reply to a message."
             )
 
@@ -90,18 +90,18 @@ async def pmpermit_handler(client: Client, message: Message):
 
         state.deny_user(target_str)
         name = await get_contact_name(client, target_str)
-        await smart_reply(message, f"❌ **Astra PM Security:** `{name}` access has been revoked.")
+        await edit_or_reply(message, f"❌ **Astra PM Security:** `{name}` access has been revoked.")
     elif action == "list":
         permitted = state.state.get("pm_permits", [])
         if not permitted:
-            return await smart_reply(message, "🚫 **Astra PM Security:** No users permitted yet.")
+            return await edit_or_reply(message, "🚫 **Astra PM Security:** No users permitted yet.")
 
         list_text = "📑 **Astra Permitted Users:**\n━━━━━━━━━━━━━━━━━━━━\n"
         for i, uid in enumerate(permitted, 1):
             name = await get_contact_name(client, uid)
             list_text += f"{i}. **{name}** (`{uid.split('@')[0]}`)\n"
 
-        await smart_reply(message, list_text)
+        await edit_or_reply(message, list_text)
 
     else:
-        await smart_reply(message, "❌ **Astra PM Security:** Invalid action. Use on/off/approve/deny/list.")
+        await edit_or_reply(message, "❌ **Astra PM Security:** Invalid action. Use on/off/approve/deny/list.")

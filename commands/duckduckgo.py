@@ -15,10 +15,10 @@ async def ddg_handler(client: Client, message: Message):
     """DuckDuckGo search plugin."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "❌ **Usage:** `.ddg <query>`")
+        return await edit_or_reply(message, "❌ **Usage:** `.ddg <query>`")
 
     query = " ".join(args)
-    status_msg = await smart_reply(message, f"🦆 Searching DDG for `{query}`...")
+    status_msg = await edit_or_reply(message, f"🦆 Searching DDG for `{query}`...")
 
     try:
         data = await perform_search(query, engines=["duckduckgo"])

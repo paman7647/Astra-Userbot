@@ -4,7 +4,7 @@ from typing import Any
 
 from config import config
 from utils.database import db
-from utils.helpers import get_contact_name, smart_reply
+from utils.helpers import get_contact_name, edit_or_reply
 from utils.state import state
 
 from astra import Client
@@ -77,7 +77,7 @@ async def enforce_pm_protection(client: Client, message: Message):
     asyncio.create_task(db.set("pm_warnings", state.state["pm_warnings"]))
 
     if warnings > config.PM_WARN_LIMIT:
-        await smart_reply(
+        await edit_or_reply(
             message, f" 🚫 *Automatic Block:* You have exceeded the warning limit ({config.PM_WARN_LIMIT})."
         )
         try:
@@ -96,5 +96,5 @@ async def enforce_pm_protection(client: Client, message: Message):
         f"⚠️ *Warning:* {warnings}/{config.PM_WARN_LIMIT}\n"
         f"Please wait for my owner to approve you. Further messages may result in an automatic block."
     )
-    await smart_reply(message, warning_text)
+    await edit_or_reply(message, warning_text)
     return False

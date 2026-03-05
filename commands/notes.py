@@ -15,7 +15,7 @@ async def notes_handler(client: Client, message: Message):
 
     if not args_list:
         usage = "save <keyword> <content> | get <keyword> | del <keyword> | list"
-        return await smart_reply(message, f" *Usage:* `.notes {usage}`")
+        return await edit_or_reply(message, f" *Usage:* `.notes {usage}`")
 
     from utils.state import state
 
@@ -23,37 +23,37 @@ async def notes_handler(client: Client, message: Message):
 
     if action in ["save", "add"]:
         if len(args_list) < 3:
-            return await smart_reply(message, " *Usage:* `.save <keyword> <content>`")
+            return await edit_or_reply(message, " *Usage:* `.save <keyword> <content>`")
         keyword = args_list[1].lower().replace("#", "")
         content = " ".join(args_list[2:])
         state.set_note(keyword, content)
-        await smart_reply(message, f" ✅ Note `{keyword}` saved! Access via `#keyword` or `get {keyword}`.")
+        await edit_or_reply(message, f" ✅ Note `{keyword}` saved! Access via `#keyword` or `get {keyword}`.")
 
     elif action == "get":
         if len(args_list) < 2:
-            return await smart_reply(message, " Specify a keyword.")
+            return await edit_or_reply(message, " Specify a keyword.")
         keyword = args_list[1].lower().replace("#", "")
         content = state.get_note(keyword)
         if content:
-            await smart_reply(message, content)
+            await edit_or_reply(message, content)
         else:
-            await smart_reply(message, " ❌ Note not found.")
+            await edit_or_reply(message, " ❌ Note not found.")
 
     elif action in ["del", "rem"]:
         if len(args_list) < 2:
-            return await smart_reply(message, " Specify a keyword to delete.")
+            return await edit_or_reply(message, " Specify a keyword to delete.")
         keyword = args_list[1].lower().replace("#", "")
         state.delete_note(keyword)
-        await smart_reply(message, f" 🗑️ Note `{keyword}` deleted.")
+        await edit_or_reply(message, f" 🗑️ Note `{keyword}` deleted.")
 
     elif action == "list":
         notes = state.state.get("notes", {})
         if not notes:
-            return await smart_reply(message, " You have no saved notes.")
+            return await edit_or_reply(message, " You have no saved notes.")
         txt = " 📝 *Your Notes:*\n\n" + "\n".join([f"• #{k}" for k in notes.keys()])
-        await smart_reply(message, txt)
+        await edit_or_reply(message, txt)
     else:
-        await smart_reply(message, " Unknown action. Use: save, get, del, list")
+        await edit_or_reply(message, " Unknown action. Use: save, get, del, list")
 
 
 # Corrected filter usage: Using functional default
@@ -73,6 +73,6 @@ async def note_trigger_handler(client: Client, message: Message):
 
             content = state.get_note(keyword)
             if content:
-                await smart_reply(message, content)
+                await edit_or_reply(message, content)
     except Exception:
         pass

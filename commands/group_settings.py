@@ -15,16 +15,16 @@ from . import *
 async def lock_handler(client: Client, message: Message):
     """Locks a group setting to admins-only."""
     if not str(message.chat_id).endswith("@g.us"):
-        return await smart_reply(message, "⚠️ Groups only.")
+        return await edit_or_reply(message, "⚠️ Groups only.")
 
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "⚠️ **Usage:** `.lock <send|add|info|all>`")
+        return await edit_or_reply(message, "⚠️ **Usage:** `.lock <send|add|info|all>`")
 
     target = args[0].lower()
     api = client._engine_api
     gid = message.chat_id
-    status = await smart_reply(message, "🔒 Locking...")
+    status = await edit_or_reply(message, "🔒 Locking...")
 
     try:
         if target in ("send", "all"):
@@ -50,16 +50,16 @@ async def lock_handler(client: Client, message: Message):
 async def unlock_handler(client: Client, message: Message):
     """Unlocks a group setting for all members."""
     if not str(message.chat_id).endswith("@g.us"):
-        return await smart_reply(message, "⚠️ Groups only.")
+        return await edit_or_reply(message, "⚠️ Groups only.")
 
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "⚠️ **Usage:** `.unlock <send|add|info|all>`")
+        return await edit_or_reply(message, "⚠️ **Usage:** `.unlock <send|add|info|all>`")
 
     target = args[0].lower()
     api = client._engine_api
     gid = message.chat_id
-    status = await smart_reply(message, "🔓 Unlocking...")
+    status = await edit_or_reply(message, "🔓 Unlocking...")
 
     try:
         if target in ("send", "all"):
@@ -86,18 +86,18 @@ async def unlock_handler(client: Client, message: Message):
 async def setsubject_handler(client: Client, message: Message):
     """Changes the group subject/name."""
     if not str(message.chat_id).endswith("@g.us"):
-        return await smart_reply(message, "⚠️ Groups only.")
+        return await edit_or_reply(message, "⚠️ Groups only.")
 
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "⚠️ **Usage:** `.setsubject <new name>`")
+        return await edit_or_reply(message, "⚠️ **Usage:** `.setsubject <new name>`")
 
     name = " ".join(args)
     try:
         await client._engine_api.set_group_subject(message.chat_id, name)
-        await smart_reply(message, f"✅ Group name changed to: **{name}**")
+        await edit_or_reply(message, f"✅ Group name changed to: **{name}**")
     except Exception as e:
-        await smart_reply(message, f"❌ Failed: {e}")
+        await edit_or_reply(message, f"❌ Failed: {e}")
 
 
 @astra_command(
@@ -111,18 +111,18 @@ async def setsubject_handler(client: Client, message: Message):
 async def setdesc_handler(client: Client, message: Message):
     """Changes the group description."""
     if not str(message.chat_id).endswith("@g.us"):
-        return await smart_reply(message, "⚠️ Groups only.")
+        return await edit_or_reply(message, "⚠️ Groups only.")
 
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "⚠️ **Usage:** `.setdesc <description>`")
+        return await edit_or_reply(message, "⚠️ **Usage:** `.setdesc <description>`")
 
     desc = " ".join(args)
     try:
         await client._engine_api.set_group_description(message.chat_id, desc)
-        await smart_reply(message, "✅ Group description updated.")
+        await edit_or_reply(message, "✅ Group description updated.")
     except Exception as e:
-        await smart_reply(message, f"❌ Failed: {e}")
+        await edit_or_reply(message, f"❌ Failed: {e}")
 
 
 @astra_command(
@@ -136,7 +136,7 @@ async def setdesc_handler(client: Client, message: Message):
 async def joinreqs_handler(client: Client, message: Message):
     """Manage group join requests."""
     if not str(message.chat_id).endswith("@g.us"):
-        return await smart_reply(message, "⚠️ Groups only.")
+        return await edit_or_reply(message, "⚠️ Groups only.")
 
     args = extract_args(message)
     api = client._engine_api
@@ -145,7 +145,7 @@ async def joinreqs_handler(client: Client, message: Message):
     try:
         reqs = await api.get_membership_requests(gid)
         if not reqs:
-            return await smart_reply(message, "📋 No pending join requests.")
+            return await edit_or_reply(message, "📋 No pending join requests.")
 
         if not args:
             # Just list them
@@ -156,10 +156,10 @@ async def joinreqs_handler(client: Client, message: Message):
             if len(reqs) > 20:
                 text += f"\n_...and {len(reqs) - 20} more_"
             text += f"\n\nUse `.joinreqs approve` or `.joinreqs reject`"
-            return await smart_reply(message, text)
+            return await edit_or_reply(message, text)
 
         action = args[0].lower()
-        status = await smart_reply(message, f"⏳ Processing {len(reqs)} requests...")
+        status = await edit_or_reply(message, f"⏳ Processing {len(reqs)} requests...")
 
         if action == "approve":
             await api.approve_membership(gid)
@@ -170,7 +170,7 @@ async def joinreqs_handler(client: Client, message: Message):
         else:
             await status.edit("⚠️ Use `approve` or `reject`.")
     except Exception as e:
-        await smart_reply(message, f"❌ Failed: {e}")
+        await edit_or_reply(message, f"❌ Failed: {e}")
 
 
 @astra_command(
@@ -183,10 +183,10 @@ async def joinreqs_handler(client: Client, message: Message):
 async def revoke_handler(client: Client, message: Message):
     """Revokes and regenerates the group invite link."""
     if not str(message.chat_id).endswith("@g.us"):
-        return await smart_reply(message, "⚠️ Groups only.")
+        return await edit_or_reply(message, "⚠️ Groups only.")
 
     try:
         new_link = await client._engine_api.revoke_invite(message.chat_id)
-        await smart_reply(message, f"🔗 Invite link revoked.\n\nNew link: {new_link}")
+        await edit_or_reply(message, f"🔗 Invite link revoked.\n\nNew link: {new_link}")
     except Exception as e:
-        await smart_reply(message, f"❌ Failed: {e}")
+        await edit_or_reply(message, f"❌ Failed: {e}")

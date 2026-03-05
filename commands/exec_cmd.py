@@ -6,7 +6,7 @@ import shutil
 import uuid
 from typing import Optional
 
-from . import *  # Astra helpers (astra_command, extract_args, smart_reply)
+from . import *  # Astra helpers (astra_command, extract_args, edit_or_reply)
 
 # Package mapping notes: linux (apt) vs darwin (brew)
 # Verified package names for Ubuntu 22.04/24.04 and macOS
@@ -279,7 +279,7 @@ def security_filter(code: str) -> Optional[str]:
 async def multi_lang_exec_handler(client: Client, message: Message):
     """Execute code in the selected programming language."""
     if not message.body or " " not in message.body:
-        return await smart_reply(
+        return await edit_or_reply(
             message,
             "⚠️ Usage:\n`.run <language> <code> [-t <seconds>] [-i <inputs>]`\n\n💡 Use `,,` for multi-inputs/datasets.",
         )
@@ -287,7 +287,7 @@ async def multi_lang_exec_handler(client: Client, message: Message):
     # Extract language and payload
     parts = message.body.split(None, 2)
     if len(parts) < 3:
-        return await smart_reply(
+        return await edit_or_reply(
             message,
             "⚠️ Usage:\n`.run <language> <code> [-t <seconds>] [-i <inputs>]`",
         )
@@ -339,12 +339,12 @@ async def multi_lang_exec_handler(client: Client, message: Message):
             break
 
     if not selected:
-        return await smart_reply(message, f"❌ Unsupported language: `{lang}`")
+        return await edit_or_reply(message, f"❌ Unsupported language: `{lang}`")
 
     # 🚀 Send "Executing" status
     icon = selected.get("icon", "🚀")
     name = selected.get("name", lang.upper())
-    status_msg = await smart_reply(message, f"{icon} *Executing {name}...*")
+    status_msg = await edit_or_reply(message, f"{icon} *Executing {name}...*")
 
     # ----------------- SECURITY CHECK (v6.0) -----------------
     from utils.state import state
@@ -361,7 +361,7 @@ async def multi_lang_exec_handler(client: Client, message: Message):
                 f"🛑 **Blocked:** Potential privacy leak (`{violation}`).\n"
                 f"━━━━━━━━━━━━━━━━━━━━"
             )
-            return await smart_reply(message, warning_text)
+            return await edit_or_reply(message, warning_text)
     # ---------------------------------------------------------
 
     binary = selected["binary"]
@@ -443,7 +443,7 @@ async def install_deps_handler(client: Client, message: Message):
     try:
         args = extract_args(message)
         if not args:
-            return await smart_reply(message, "⚠️ Usage: `.installdeps <lang|all|missing>`")
+            return await edit_or_reply(message, "⚠️ Usage: `.installdeps <lang|all|missing>`")
 
         system = platform.system().lower()
         if system == "linux":
@@ -451,7 +451,7 @@ async def install_deps_handler(client: Client, message: Message):
         elif system == "darwin":
             update_cmd, base_cmd = "brew update", "brew install"
         else:
-            return await smart_reply(message, "❌ OS not supported.")
+            return await edit_or_reply(message, "❌ OS not supported.")
 
         targets = []
         if args[0].lower() == "all":
@@ -468,10 +468,10 @@ async def install_deps_handler(client: Client, message: Message):
                         break
 
         if not targets:
-            return await smart_reply(message, "✅ Systems ready.")
+            return await edit_or_reply(message, "✅ Systems ready.")
 
         packages = list(dict.fromkeys([get_package_name(t) for t in targets if get_package_name(t)]))
-        status_msg = await smart_reply(message, f"⏳ *Installing {len(packages)} packages...*")
+        status_msg = await edit_or_reply(message, f"⏳ *Installing {len(packages)} packages...*")
 
         cmd = f"{update_cmd} && {base_cmd} {' '.join(packages)}"
         process = await asyncio.create_subprocess_shell(cmd)
@@ -480,7 +480,7 @@ async def install_deps_handler(client: Client, message: Message):
         await status_msg.edit("✅ *Dependencies Processed.*")
 
     except Exception as e:
-        await smart_reply(message, f"❌ Error: {str(e)}")
+        await edit_or_reply(message, f"❌ Error: {str(e)}")
 
 
 EXAMPLES = """

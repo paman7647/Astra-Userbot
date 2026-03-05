@@ -116,7 +116,7 @@ class ErrorReporter:
         Send full error diagnostics to group/DM ONLY.
         User in the original chat sees a clean one-liner.
         """
-        from utils.helpers import smart_reply
+        from utils.helpers import edit_or_reply
 
         global _error_timestamps
         now = time.time()
@@ -166,7 +166,7 @@ class ErrorReporter:
                 dest = "owner DM"
             else:
                 dest = "logs"
-            await smart_reply(message, f"⚠️ *An error occurred.* Details reported to *{dest}*.")
+            await edit_or_reply(message, f"⚠️ *An error occurred.* Details reported to *{dest}*.")
         except:
             pass
 

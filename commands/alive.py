@@ -20,7 +20,7 @@ from . import *
 async def alive_handler(client: Client, message: Message):
     """Renders a real-time professional status report matching high-end userbots."""
     # 1. Real-time Feel: Initial Status
-    status_msg = await smart_reply(message, "⚙️ **Astra Engine:** `Pinging infrastructure...`")
+    status_msg = await edit_or_reply(message, "⚙️ **Astra Engine:** `Pinging infrastructure...`")
     start_ping = time.time()
 
     # 2. Collect Metadata

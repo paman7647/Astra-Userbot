@@ -38,4 +38,4 @@ async def mathquiz_handler(client: Client, message: Message):
     # Render Quiz Card
     report = f"🔢 **Astra Quick Math Quiz**\n\nSolve: `{a} {op} {b} = ?`\n\n💡 *Answer:* ||{result}||"
 
-    await smart_reply(message, report)
+    await edit_or_reply(message, report)

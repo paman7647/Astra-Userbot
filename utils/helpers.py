@@ -95,22 +95,33 @@ class RateLimiter:
         return True
 
 
-async def smart_reply(message: Message, content: str, **kwargs):
+async def edit_or_reply(message: Message, content: str, **kwargs):
     """
-    An intelligent delivery mechanism that edits the message if sent by the bot,
-    or replies if sent by another user. Handles edge cases where editing is restricted.
+    Edits the triggering message if sent by us, otherwise replies.
+    Falls back to a plain send if both edit and reply fail
+    (e.g. message deleted, chat read-only, too old to edit).
     """
     try:
-        # If the bot itself sent the message, editing provides a cleaner UI.
         if message.from_me:
-            await asyncio.sleep(0.5)
             await message.edit(content)
             return message
-        else:
-            return await message.reply(content, **kwargs)
     except Exception:
-        # Fallback to standard reply if edit fails (e.g., message already deleted or too old).
+        pass
+
+    try:
         return await message.reply(content, **kwargs)
+    except Exception:
+        pass
+
+    # Last resort: just send to the chat directly
+    try:
+        return await message._client.send_message(message.chat_id, content, **kwargs)
+    except Exception:
+        return None
+
+
+# Keep backward compat alias
+smart_reply = edit_or_reply
 
 
 async def safe_edit(message: Message, content: str, **kwargs):

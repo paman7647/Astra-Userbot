@@ -15,10 +15,10 @@ async def iginfo_handler(client: Client, message: Message):
     """Instagram Profile Analyzer using official API or robust GraphQL scraping."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "❌ **Usage:** `.iginfo <username>`")
+        return await edit_or_reply(message, "❌ **Usage:** `.iginfo <username>`")
 
     username = args[0].replace("@", "")
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message, f"📸 **Astra Instagram Intelligence**\n━━━━━━━━━━━━━━━━━━━━\n🔍 **Analyzing:** `@{username}`..."
     )
 

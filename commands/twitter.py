@@ -13,10 +13,10 @@ async def twitter_handler(client: Client, message: Message):
     """Download Twitter/X video with optimized MediaChannel"""
     args_list = extract_args(message)
     if not args_list:
-        return await smart_reply(message, " ❌ Please provide a Twitter/X URL.")
+        return await edit_or_reply(message, " ❌ Please provide a Twitter/X URL.")
 
     url = args_list[0]
-    status_msg = await smart_reply(message, " 🔍 *Initializing Twitter Engine...*")
+    status_msg = await edit_or_reply(message, " 🔍 *Initializing Twitter Engine...*")
 
     # Use MediaChannel for a "real-time" experience
     from utils.media_channel import MediaChannel

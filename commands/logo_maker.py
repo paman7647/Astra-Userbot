@@ -21,10 +21,10 @@ os.makedirs(LOGOS_DIR, exist_ok=True)
 async def logo_handler(client: Client, message: Message):
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, " Usage: `.logo MyName`")
+        return await edit_or_reply(message, " Usage: `.logo MyName`")
 
     text = " ".join(args)
-    status_msg = await smart_reply(message, " Processing...")
+    status_msg = await edit_or_reply(message, " Processing...")
 
     # 1. Pick a random local background (Prefer manually added bg1, bg2, etc.)
     bg_files = [f for f in os.listdir(LOGOS_DIR) if f.startswith("bg") and f.endswith((".jpg", ".jpeg", ".png"))]

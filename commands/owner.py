@@ -21,10 +21,10 @@ from . import *
 async def setname_handler(client: Client, message: Message):
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, " ⚠️ Provide a new name. Usage: `.setname My New Name`")
+        return await edit_or_reply(message, " ⚠️ Provide a new name. Usage: `.setname My New Name`")
 
     new_name = " ".join(args)
-    status_msg = await smart_reply(message, f" 🔄 Updating profile name to: *{new_name}*...")
+    status_msg = await edit_or_reply(message, f" 🔄 Updating profile name to: *{new_name}*...")
 
     try:
         await client.account.set_name(new_name)
@@ -44,10 +44,10 @@ async def setname_handler(client: Client, message: Message):
 async def setbio_handler(client: Client, message: Message):
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, " ⚠️ Provide a bio text. Usage: `.bio Available`")
+        return await edit_or_reply(message, " ⚠️ Provide a bio text. Usage: `.bio Available`")
 
     new_bio = " ".join(args)
-    status_msg = await smart_reply(message, " 🔄 Updating profile bio...")
+    status_msg = await edit_or_reply(message, " 🔄 Updating profile bio...")
 
     try:
         await client.account.set_about_text(new_bio)
@@ -65,9 +65,9 @@ async def setbio_handler(client: Client, message: Message):
 )
 async def setpfp_handler(client: Client, message: Message):
     if not message.has_quoted_msg or not (message.quoted_type and message.quoted_type == MessageType.IMAGE):
-        return await smart_reply(message, " ⚠️ Reply to an image to set it as your profile picture.")
+        return await edit_or_reply(message, " ⚠️ Reply to an image to set it as your profile picture.")
 
-    status_msg = await smart_reply(message, " ⏳ *Updating profile picture...*")
+    status_msg = await edit_or_reply(message, " ⏳ *Updating profile picture...*")
 
     try:
         # Use high-reliability bridge downloader
@@ -98,11 +98,11 @@ async def setpfp_handler(client: Client, message: Message):
 )
 async def setgpic_handler(client: Client, message: Message):
     if not str(message.chat_id).endswith("@g.us"):
-        return await smart_reply(message, " ❌ This command only works in groups.")
+        return await edit_or_reply(message, " ❌ This command only works in groups.")
     if not message.has_quoted_msg or not (message.quoted_type and message.quoted_type == MessageType.IMAGE):
-        return await smart_reply(message, " ⚠️ Reply to an image to set it as group picture.")
+        return await edit_or_reply(message, " ⚠️ Reply to an image to set it as group picture.")
 
-    status_msg = await smart_reply(message, " ⏳ *Updating group picture...*")
+    status_msg = await edit_or_reply(message, " ⏳ *Updating group picture...*")
 
     try:
         # Use high-reliability bridge downloader
@@ -132,7 +132,7 @@ async def privacy_handler(client: Client, message: Message):
     args = extract_args(message)
 
     if not args:
-        status_msg = await smart_reply(message, " 🔍 *Fetching privacy settings...*")
+        status_msg = await edit_or_reply(message, " 🔍 *Fetching privacy settings...*")
         try:
             settings = await client.account.get_settings()
             text = " 🛡️ **Privacy Settings**\n\n"
@@ -145,7 +145,7 @@ async def privacy_handler(client: Client, message: Message):
         return
 
     if len(args) < 2:
-        return await smart_reply(
+        return await edit_or_reply(
             message,
             " ⚠️ Usage: `.privacy <category> <value>`\nCategories: last_seen, profile_pic, about, status, read_receipts\nValues: all, contacts, none",
         )
@@ -157,7 +157,7 @@ async def privacy_handler(client: Client, message: Message):
     if category == "read_receipts":
         value = value in ["true", "on", "yes", "enabled", "all"]
 
-    status_msg = await smart_reply(message, f" 🔄 Updating *{category}* to *{value}*...")
+    status_msg = await edit_or_reply(message, f" 🔄 Updating *{category}* to *{value}*...")
 
     try:
         method_map = {

@@ -16,13 +16,13 @@ async def currency_handler(client: Client, message: Message):
     try:
         args = extract_args(message)
         if len(args) < 3:
-            return await smart_reply(message, " 💰 **Currency Converter**\n\nUsage: `.conv 100 USD INR`")
+            return await edit_or_reply(message, " 💰 **Currency Converter**\n\nUsage: `.conv 100 USD INR`")
 
         amount = args[0]
         base = args[1].upper()
         target = args[2].upper()
 
-        status_msg = await smart_reply(message, f" 💱 *Fetching rates for {base} to {target}...*")
+        status_msg = await edit_or_reply(message, f" 💱 *Fetching rates for {base} to {target}...*")
 
         # Using Frankfurter API (Free, no API key required)
         url = f"https://api.frankfurter.app/latest?amount={amount}&from={base}&to={target}"
@@ -49,4 +49,4 @@ async def currency_handler(client: Client, message: Message):
         await status_msg.edit(" ⚠️ Remote rate engine failed or invalid currency code.")
 
     except Exception as e:
-        await smart_reply(message, f" ❌ Currency Error: {str(e)}")
+        await edit_or_reply(message, f" ❌ Currency Error: {str(e)}")

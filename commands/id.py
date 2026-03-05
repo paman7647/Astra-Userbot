@@ -45,4 +45,4 @@ async def id_handler(client: Client, message: Message):
         "━━━━━━━━━━━━━━━━━━━━━━"
     )
 
-    await smart_reply(message, info_text)
+    await edit_or_reply(message, info_text)

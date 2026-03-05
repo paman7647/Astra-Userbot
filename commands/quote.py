@@ -16,9 +16,9 @@ from . import *
 async def quote_handler(client: Client, message: Message):
     """Message to Image Quote Generator."""
     if not message.has_quoted_msg:
-        return await smart_reply(message, "❌ **Reply to a message** to create a quote.")
+        return await edit_or_reply(message, "❌ **Reply to a message** to create a quote.")
 
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message, "🎨 **Astra Creative Studio**\n━━━━━━━━━━━━━━━━━━━━\n🖼️ *Designing your quote...*"
     )
 

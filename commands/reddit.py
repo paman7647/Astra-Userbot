@@ -15,10 +15,10 @@ async def reddit_handler(client: Client, message: Message):
     """Download Reddit video with optimized MediaChannel"""
     args_list = extract_args(message)
     if not args_list:
-        return await smart_reply(message, " ❌ Please provide a Reddit URL.")
+        return await edit_or_reply(message, " ❌ Please provide a Reddit URL.")
 
     url = args_list[0]
-    status_msg = await smart_reply(message, " 🔍 *Initializing Reddit Engine...*")
+    status_msg = await edit_or_reply(message, " 🔍 *Initializing Reddit Engine...*")
 
     channel = MediaChannel(client, message, status_msg)
     file_path, metadata = await channel.run_bridge(url, "video")

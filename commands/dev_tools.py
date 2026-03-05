@@ -16,7 +16,7 @@ async def db_tool_handler(client: Client, message: Message):
     """Developer tool for real-time state and database manipulation."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, f"❌ **Usage:** `{state.get_prefix()}db <set/get/list/del> [args]`")
+        return await edit_or_reply(message, f"❌ **Usage:** `{state.get_prefix()}db <set/get/list/del> [args]`")
 
     sub = args[0].lower()
 
@@ -31,7 +31,7 @@ async def db_tool_handler(client: Client, message: Message):
             val = raw_val
 
         state.set_config(key, val)
-        return await smart_reply(message, f"✅ **DB Update:** `{key}` set to `{val}`")
+        return await edit_or_reply(message, f"✅ **DB Update:** `{key}` set to `{val}`")
 
     # 2. DB GET
     elif sub == "get" and len(args) >= 2:
@@ -41,18 +41,18 @@ async def db_tool_handler(client: Client, message: Message):
             # Check top-level state too
             val = state.state.get(key, "Not Found")
 
-        return await smart_reply(message, f"🔎 **Key:** `{key}`\n📦 **Value:** `{val}`")
+        return await edit_or_reply(message, f"🔎 **Key:** `{key}`\n📦 **Value:** `{val}`")
 
     # 3. DB LIST
     elif sub == "list":
         configs = state.get_all_configs()
         if not configs:
-            return await smart_reply(message, "📂 **DB:** No custom overrides found.")
+            return await edit_or_reply(message, "📂 **DB:** No custom overrides found.")
 
         list_text = "📂 **DATABASE OVERRIDES**\n━━━━━━━━━━━━━━━━━━━━\n"
         for k, v in configs.items():
             list_text += f"🔹 `{k}`: `{v}`\n"
-        return await smart_reply(message, list_text)
+        return await edit_or_reply(message, list_text)
 
     # 4. DB DELETE
     elif sub in ["del", "delete", "rm"] and len(args) >= 2:
@@ -62,10 +62,10 @@ async def db_tool_handler(client: Client, message: Message):
             from utils.database import db as db_core
 
             asyncio.create_task(db_core.set("configs", state.state["configs"]))
-            return await smart_reply(message, f"🗑️ **DB:** Deleted override `{key}`.")
-        return await smart_reply(message, f"❌ **DB:** Override `{key}` not found.")
+            return await edit_or_reply(message, f"🗑️ **DB:** Deleted override `{key}`.")
+        return await edit_or_reply(message, f"❌ **DB:** Override `{key}` not found.")
 
-    return await smart_reply(message, "❌ Invalid sub-command. Use `set`, `get`, `list`, or `del`.")
+    return await edit_or_reply(message, "❌ Invalid sub-command. Use `set`, `get`, `list`, or `del`.")
 
 
 @astra_command(
@@ -90,10 +90,10 @@ async def setcfg_handler(client: Client, message: Message):
             "🔹 `COMMAND_PREFIX`: Change prefix instantly\n\n"
             f"**Usage:** `{state.get_prefix()}setcfg <key> <value>`"
         )
-        return await smart_reply(message, help_text)
+        return await edit_or_reply(message, help_text)
 
     if len(args) < 2:
-        return await smart_reply(message, " ⚠️ Usage: `.setcfg <key> <value>`")
+        return await edit_or_reply(message, " ⚠️ Usage: `.setcfg <key> <value>`")
 
     key = args[0].upper()
     val_raw = " ".join(args[1:])
@@ -113,7 +113,7 @@ async def setcfg_handler(client: Client, message: Message):
     else:
         state.set_config(key, val)
 
-    await smart_reply(message, f"✨ **Config Updated:** `{key}` is now `{val}`")
+    await edit_or_reply(message, f"✨ **Config Updated:** `{key}` is now `{val}`")
 
 
 @astra_command(
@@ -127,7 +127,7 @@ async def delcfg_handler(client: Client, message: Message):
     """Deletes a custom configuration from the database."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, " ⚠️ Usage: `.delcfg <key>`")
+        return await edit_or_reply(message, " ⚠️ Usage: `.delcfg <key>`")
 
     key = args[0].upper()
 
@@ -138,9 +138,9 @@ async def delcfg_handler(client: Client, message: Message):
         from utils.database import db as db_core
 
         asyncio.create_task(db_core.set("configs", state.state["configs"]))
-        await smart_reply(message, f"🗑️ **Config Deleted:** `{key}`")
+        await edit_or_reply(message, f"🗑️ **Config Deleted:** `{key}`")
     else:
-        await smart_reply(message, f"❌ **Config Not Found:** `{key}`")
+        await edit_or_reply(message, f"❌ **Config Not Found:** `{key}`")
 
 
 @astra_command(
@@ -154,20 +154,20 @@ async def getcfg_handler(client: Client, message: Message):
     """Retrieves a custom configuration."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, " ⚠️ Usage: `.getcfg <key>`")
+        return await edit_or_reply(message, " ⚠️ Usage: `.getcfg <key>`")
 
     key = args[0].upper()
     val = state.get_config(key)
 
     if val is not None:
-        await smart_reply(message, f"🔎 **Config `{key}`:** `{val}`")
+        await edit_or_reply(message, f"🔎 **Config `{key}`:** `{val}`")
     else:
         # Fallback check
         val = state.state.get(key)
         if val is not None:
-            await smart_reply(message, f"🔎 **Core State `{key}`:** `{val}`")
+            await edit_or_reply(message, f"🔎 **Core State `{key}`:** `{val}`")
         else:
-            await smart_reply(message, f"❌ **Config Not Found:** `{key}`")
+            await edit_or_reply(message, f"❌ **Config Not Found:** `{key}`")
 
 
 @astra_command(
@@ -182,7 +182,7 @@ async def listcfg_handler(client: Client, message: Message):
     configs = state.get_all_configs()
 
     if not configs:
-        return await smart_reply(message, "📂 **Configuration:** No dynamic overrides are currently set.")
+        return await edit_or_reply(message, "📂 **Configuration:** No dynamic overrides are currently set.")
 
     list_text = "📋 **ACTIVE DYNAMIC CONFIGS**\n━━━━━━━━━━━━━━━━━━━━━━\n"
     for k, v in configs.items():
@@ -194,7 +194,7 @@ async def listcfg_handler(client: Client, message: Message):
 
     list_text += "━━━━━━━━━━━━━━━━━━━━━━\n💡 _Use `.delcfg <key>` to remove an override._"
 
-    await smart_reply(message, list_text)
+    await edit_or_reply(message, list_text)
 
 
 @astra_command(
@@ -230,4 +230,4 @@ async def sysvars_handler(client: Client, message: Message):
         "🔍 _Use `.listcfg` to see your currently active overrides._"
     )
 
-    await smart_reply(message, docs)
+    await edit_or_reply(message, docs)

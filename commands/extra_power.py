@@ -18,13 +18,13 @@ async def ss_handler(client: Client, message: Message):
     """Website screenshot plugin."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "❌ **Usage:** `.ss <url>`")
+        return await edit_or_reply(message, "❌ **Usage:** `.ss <url>`")
 
     url = args[0]
     if not url.startswith("http"):
         url = "https://" + url
 
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message, f"📸 **Astra Web Capture**\n━━━━━━━━━━━━━━━━━━━━\n🌐 **Target:** `{url}`..."
     )
 
@@ -103,13 +103,13 @@ async def ss_handler(client: Client, message: Message):
 async def purge_handler(client: Client, message: Message):
     """Bulk message deletion plugin."""
     if not message.has_quoted_msg:
-        return await smart_reply(message, "🗑️ Reply to a message to start purging from there.")
+        return await edit_or_reply(message, "🗑️ Reply to a message to start purging from there.")
 
     args = extract_args(message)
     count = int(args[0]) if args and args[0].isdigit() else 10
     count = min(count, 100)  # Limit to 100 for safety
 
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message, f"🗑️ **Astra Purge Utility**\n━━━━━━━━━━━━━━━━━━━━\n✨ *Deleting {count} messages...*"
     )
 

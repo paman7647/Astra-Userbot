@@ -17,10 +17,10 @@ async def anime_handler(client: Client, message: Message):
     """Anime lookup plugin using Jikan API."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "❌ **Usage:** `.anime <anime name>`")
+        return await edit_or_reply(message, "❌ **Usage:** `.anime <anime name>`")
 
     query = " ".join(args)
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message, f"⛩️ **Astra Anime Search**\n━━━━━━━━━━━━━━━━━━━━\n🔍 **Query:** `{query}`..."
     )
 

@@ -10,10 +10,10 @@ async def broadcast_handler(client: Client, message: Message):
     """Mass broadcast to all chats."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "❌ **Usage:** `.bc <text>`")
+        return await edit_or_reply(message, "❌ **Usage:** `.bc <text>`")
 
     text = " ".join(args)
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message, "📡 **Astra Broadcast Engine**\n━━━━━━━━━━━━━━━━━━━━\n🔄 *Fetching chats and initializing...*"
     )
 
@@ -56,10 +56,10 @@ async def broadcast_gc_handler(client: Client, message: Message):
     """Mass broadcast to groups only."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "❌ **Usage:** `.bcgc <text>`")
+        return await edit_or_reply(message, "❌ **Usage:** `.bcgc <text>`")
 
     text = " ".join(args)
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message, "🏢 **Astra Group Broadcast**\n━━━━━━━━━━━━━━━━━━━━\n🔄 *Filtering groups...*"
     )
 

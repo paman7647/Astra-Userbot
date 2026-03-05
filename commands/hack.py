@@ -49,7 +49,7 @@ async def hack_handler(client: Client, message: Message):
         except:
             pass
 
-    status_msg = await smart_reply(message, f" 💻 *Initiating Hack on {target_name}...*")
+    status_msg = await edit_or_reply(message, f" 💻 *Initiating Hack on {target_name}...*")
 
     steps = [
         f" 🔍 *Scanning vulnerabilities on {target_name}...*",

@@ -25,7 +25,7 @@ async def calc_handler(client: Client, message: Message):
     """
     args_list = extract_args(message)
     if not args_list:
-        return await smart_reply(
+        return await edit_or_reply(
             message,
             " 📋 **Mathematical Resolver**\n\n"
             "Please provide an expression to solve.\n"
@@ -41,4 +41,4 @@ async def calc_handler(client: Client, message: Message):
     # restricted eval
     result = eval(expression, {"__builtins__": {}}, allowed_names)
 
-    await smart_reply(message, f" 🔢 **Calculation Result**\n\n*Input:* `{expression}`\n*Output:* `{result}`")
+    await edit_or_reply(message, f" 🔢 **Calculation Result**\n\n*Input:* `{expression}`\n*Output:* `{result}`")

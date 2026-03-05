@@ -70,4 +70,4 @@ async def ship_handler(client: Client, message: Message):
         f"💬 **Result:** {comment}"
     )
 
-    await smart_reply(message, report)
+    await edit_or_reply(message, report)

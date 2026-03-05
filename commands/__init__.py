@@ -3,7 +3,7 @@
 import logging
 
 from utils.error_reporter import ErrorReporter
-from utils.helpers import get_contact_name, smart_reply
+from utils.helpers import get_contact_name, edit_or_reply, edit_or_reply
 from utils.plugin_utils import (
     COMMANDS_METADATA,
     PLUGIN_HANDLES,

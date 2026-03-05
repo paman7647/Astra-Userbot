@@ -56,4 +56,4 @@ async def stats_handler(client: Client, message: Message):
         "✨ *System is running optimally.*"
     )
 
-    await smart_reply(message, stats_text)
+    await edit_or_reply(message, stats_text)

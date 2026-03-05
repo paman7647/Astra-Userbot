@@ -43,10 +43,10 @@ async def time_handler(client: Client, message: Message):
             c_now = datetime.now(zi)
             report += f"{city}: `{c_now.strftime('%H:%M:%S')} ({c_now.strftime('%d %b')})`\n"
         
-        return await smart_reply(message, report)
+        return await edit_or_reply(message, report)
 
     if is_img:
-        status_msg = await smart_reply(message, "🎨 *Rendering stylized clock...*")
+        status_msg = await edit_or_reply(message, "🎨 *Rendering stylized clock...*")
         try:
             # Drawing Logic
             img = Image.new("RGB", (800, 400), color=(20, 20, 25))
@@ -107,7 +107,7 @@ async def time_handler(client: Client, message: Message):
         f"🌐 **Zone:** `{config.TIMEZONE}`\n"
         f"━━━━━━━━━━━━━━━━━━━━"
     )
-    await smart_reply(message, report)
+    await edit_or_reply(message, report)
 
 @astra_command(
     name="calendar",
@@ -128,10 +128,10 @@ async def calendar_handler(client: Client, message: Message):
         cal_str = calendar.TextCalendar(calendar.SUNDAY).formatyear(now.year)
         if len(cal_str) > 3500: # Truncation check
             cal_str = cal_str[:3500] + "..."
-        return await smart_reply(message, f"📅 **Yearly Calendar: {now.year}**\n```\n{cal_str}\n```")
+        return await edit_or_reply(message, f"📅 **Yearly Calendar: {now.year}**\n```\n{cal_str}\n```")
 
     if is_img:
-        status_msg = await smart_reply(message, "🎨 *Rendering calendar...*")
+        status_msg = await edit_or_reply(message, "🎨 *Rendering calendar...*")
         try:
             img = Image.new("RGB", (1000, 900), color=(15, 15, 20))
             draw = ImageDraw.Draw(img)
@@ -188,7 +188,7 @@ async def calendar_handler(client: Client, message: Message):
 
     # Text fall-back / standard
     cal_str = calendar.TextCalendar(calendar.SUNDAY).formatmonth(now.year, now.month)
-    await smart_reply(message, f"📅 **Calendar: {calendar.month_name[now.month]} {now.year}**\n```\n{cal_str}\n```")
+    await edit_or_reply(message, f"📅 **Calendar: {calendar.month_name[now.month]} {now.year}**\n```\n{cal_str}\n```")
 
 @astra_command(
     name="timediff",
@@ -200,7 +200,7 @@ async def timediff_handler(client: Client, message: Message):
     """Time Diff Handler"""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "⚠️ Usage: `.timediff <YYYY-MM-DD>` or `.timediff <HH:MM>`")
+        return await edit_or_reply(message, "⚠️ Usage: `.timediff <YYYY-MM-DD>` or `.timediff <HH:MM>`")
     
     # Basic countdown implementation
     target_str = args[0]
@@ -218,7 +218,7 @@ async def timediff_handler(client: Client, message: Message):
         diff = target - now
         
         if diff.total_seconds() < 0:
-            return await smart_reply(message, f"⏳ **Event Passed:** `{abs(diff)}` ago.")
+            return await edit_or_reply(message, f"⏳ **Event Passed:** `{abs(diff)}` ago.")
             
         days = diff.days
         hours, remainder = divmod(diff.seconds, 3600)
@@ -231,9 +231,9 @@ async def timediff_handler(client: Client, message: Message):
             f"📅 **Remaining:** `{f'{days}d ' if days else ''}{hours}h {minutes}m {seconds}s`\n"
             f"━━━━━━━━━━━━━━━━━━━━"
         )
-        await smart_reply(message, report)
+        await edit_or_reply(message, report)
     except Exception as e:
-        await smart_reply(message, "❌ Invalid format. Use `YYYY-MM-DD` or `HH:MM`.")
+        await edit_or_reply(message, "❌ Invalid format. Use `YYYY-MM-DD` or `HH:MM`.")
 
 @astra_command(
     name="holiday",
@@ -259,7 +259,7 @@ async def holiday_handler(client: Client, message: Message):
     for date, name in holidays:
         report += f"• `{date}`: **{name}**\n"
     
-    await smart_reply(message, report)
+    await edit_or_reply(message, report)
 
 @astra_command(
     name="event",
@@ -272,7 +272,7 @@ async def event_handler(client: Client, message: Message):
     # Using db.state to store events as a JSON list for simplicity in this version
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "⚠️ Usage: `.event add [desc]` or `.event list`")
+        return await edit_or_reply(message, "⚠️ Usage: `.event add [desc]` or `.event list`")
     
     from utils.database import db
     
@@ -281,23 +281,23 @@ async def event_handler(client: Client, message: Message):
     
     if cmd == "add":
         desc = " ".join(args[1:])
-        if not desc: return await smart_reply(message, "❌ Provide a description.")
+        if not desc: return await edit_or_reply(message, "❌ Provide a description.")
         events.append({"desc": desc, "time": datetime.now(TZ).strftime("%Y-%m-%d %H:%M")})
         await db.set("user_events", events)
-        return await smart_reply(message, f"✅ **Event Added:** `{desc}`")
+        return await edit_or_reply(message, f"✅ **Event Added:** `{desc}`")
         
     if cmd == "list":
-        if not events: return await smart_reply(message, "ℹ️ No events found.")
+        if not events: return await edit_or_reply(message, "ℹ️ No events found.")
         report = "📝 **Astra Event Diary**\n━━━━━━━━━━━━━━━━━━━━\n"
         for i, ev in enumerate(events, 1):
             report += f"{i}. [{ev['time']}] {ev['desc']}\n"
-        return await smart_reply(message, report)
+        return await edit_or_reply(message, report)
     
     if cmd == "del":
         try:
             idx = int(args[1]) - 1
             removed = events.pop(idx)
             await db.set("user_events", events)
-            return await smart_reply(message, f"🗑️ **Removed:** `{removed['desc']}`")
+            return await edit_or_reply(message, f"🗑️ **Removed:** `{removed['desc']}`")
         except:
-            return await smart_reply(message, "❌ Invalid index.")
+            return await edit_or_reply(message, "❌ Invalid index.")

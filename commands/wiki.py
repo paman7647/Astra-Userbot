@@ -20,10 +20,10 @@ async def wiki_handler(client: Client, message: Message):
     """
     args_list = extract_args(message)
     if not args_list:
-        return await smart_reply(message, " 📚 **Wikipedia Search**\n\nPlease provide a search term.")
+        return await edit_or_reply(message, " 📚 **Wikipedia Search**\n\nPlease provide a search term.")
 
     query = " ".join(args_list)
-    status_msg = await smart_reply(message, f"📚 Searching Wikipedia for `{query}`...")
+    status_msg = await edit_or_reply(message, f"📚 Searching Wikipedia for `{query}`...")
 
     headers = {
         "User-Agent": "AstraUserbot/1.0 (https://github.com/paman7647/Astra-Userbot; contact@example.com) aiohttp/3.8"

@@ -15,10 +15,10 @@ async def google_handler(client: Client, message: Message):
     """Google search plugin."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "❌ **Usage:** `.google <query>`")
+        return await edit_or_reply(message, "❌ **Usage:** `.google <query>`")
 
     query = " ".join(args)
-    status_msg = await smart_reply(message, f"🔍 Searching Google for `{query}`...")
+    status_msg = await edit_or_reply(message, f"🔍 Searching Google for `{query}`...")
 
     data = await perform_search(query, engines=["google"])
 

@@ -22,7 +22,7 @@ async def ai_handler(client: Client, message: Message):
             prompt = quoted.body
 
     if not prompt:
-        return await smart_reply(
+        return await edit_or_reply(
             message,
             "📋 **Usage:** Please provide a prompt or reply to a message.\n*Example:* `.ai What is the capital of France?`",
         )
@@ -31,7 +31,7 @@ async def ai_handler(client: Client, message: Message):
 
     api_key = config.GEMINI_API_KEY
     if not api_key:
-        return await smart_reply(
+        return await edit_or_reply(
             message, " ❌ Gemini API key not found. Please set `GEMINI_API_KEY` environment variable."
         )
 
@@ -39,7 +39,7 @@ async def ai_handler(client: Client, message: Message):
 
     gen_client = genai.Client(api_key=api_key)
 
-    status_msg = await smart_reply(message, "✨ **Astra AI**\n━━━━━━━━━━━━━━━━━━━━\n🧠 *Thinking...*")
+    status_msg = await edit_or_reply(message, "✨ **Astra AI**\n━━━━━━━━━━━━━━━━━━━━\n🧠 *Thinking...*")
 
     import asyncio
 

@@ -12,7 +12,7 @@ import aiohttp
 from PIL import Image, ImageDraw, ImageFont
 from utils.bridge_downloader import bridge_downloader
 from utils.database import db
-from utils.helpers import safe_edit, smart_reply, handle_command_error
+from utils.helpers import safe_edit, edit_or_reply, handle_command_error
 
 from . import *
 
@@ -609,7 +609,7 @@ async def send_meme_media(client, chat_id, meme_data, reply_to) -> bool:
 # ── Generic Handler (DRY) ──────────────────
 
 async def _meme_handler(client, message, subs, label, fallback_subs=None, **kwargs):
-    status_msg = await smart_reply(message, f"*{label}*")
+    status_msg = await edit_or_reply(message, f"*{label}*")
     try:
         meme = await fetch_meme(subs, **kwargs)
         if not meme and fallback_subs:
@@ -674,11 +674,11 @@ async def meme_maker_handler(client: Client, message: Message):
     is_image = message.type == MessageType.IMAGE
     has_quoted_image = message.has_quoted_msg and message.quoted_type == MessageType.IMAGE
     if not is_image and not has_quoted_image:
-        return await smart_reply(message, "✨ Reply to an image to make a meme.")
+        return await edit_or_reply(message, "✨ Reply to an image to make a meme.")
 
     text = " ".join(extract_args(message))
     if not text:
-        return await smart_reply(message, "✨ Provide text for the meme. Example: `.mm Top Text | Bottom Text`")
+        return await edit_or_reply(message, "✨ Provide text for the meme. Example: `.mm Top Text | Bottom Text`")
 
     top_text, bottom_text = "", ""
     if "|" in text:
@@ -688,7 +688,7 @@ async def meme_maker_handler(client: Client, message: Message):
     else:
         top_text = text.strip().upper()
 
-    status_msg = await smart_reply(message, "✨ **Generating meme...**")
+    status_msg = await edit_or_reply(message, "✨ **Generating meme...**")
 
     media_data = await bridge_downloader.download_media(client, message)
     if not media_data:
@@ -745,7 +745,7 @@ async def meme_maker_handler(client: Client, message: Message):
 
 @astra_command(name="memedebug", description="Diagnose meme fetching issues", category="System", usage=".memedebug", owner_only=True)
 async def memedebug_handler(client: Client, message: Message):
-    status_msg = await smart_reply(message, "🔍 *Running Meme Diagnostics...*")
+    status_msg = await edit_or_reply(message, "🔍 *Running Meme Diagnostics...*")
     report = "🛠️ *Astra Meme Diagnostics*\n━━━━━━━━━━━━━━━━━━━━━━\n"
 
     async with aiohttp.ClientSession(headers=get_reddit_headers(), timeout=REQUEST_TIMEOUT) as session:
@@ -833,12 +833,12 @@ async def setreddit_handler(client: Client, message: Message):
     args = extract_args(message)
     if len(args) < 2:
         cid, _ = await _get_reddit_creds()
-        return await smart_reply(
+        return await edit_or_reply(
             message,
             f"🔑 *Reddit OAuth2 Config*\n━━━━━━━━━━━━━━━━━━━━\n*Status:* {'✅ Configured' if cid else '❌ Not set'}\n\n💡 *Usage:* `.setreddit <client_id> <client_secret>`\nGet free creds → reddit.com/prefs/apps *(script type)*",
         )
     cid, csec = args[0], args[1]
-    status_msg = await smart_reply(message, "🔄 *Validating credentials...*")
+    status_msg = await edit_or_reply(message, "🔄 *Validating credentials...*")
     try:
         auth = aiohttp.BasicAuth(cid, csec)
         async with aiohttp.ClientSession(headers={"User-Agent": REDDIT_UA}, timeout=REQUEST_TIMEOUT) as session:
@@ -862,12 +862,12 @@ async def setgiphy_handler(client: Client, message: Message):
     args = extract_args(message)
     if not args:
         key = await db.get("giphy_api_key") or os.getenv("GIPHY_API_KEY", "")
-        return await smart_reply(
+        return await edit_or_reply(
             message,
             f"🎞️ *Giphy Config*\n━━━━━━━━━━━━━━━━━━━━\n*Status:* {'✅ Configured' if key else '❌ Not set'}\n\n💡 *Usage:* `.setgiphy <api_key>`\nGet free key → developers.giphy.com",
         )
     api_key = args[0]
-    status_msg = await smart_reply(message, "🔄 *Validating Giphy key...*")
+    status_msg = await edit_or_reply(message, "🔄 *Validating Giphy key...*")
     try:
         async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT) as session:
             async with session.get(f"https://api.giphy.com/v1/gifs/trending?api_key={api_key}&limit=1") as resp:

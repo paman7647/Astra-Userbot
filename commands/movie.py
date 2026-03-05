@@ -17,10 +17,10 @@ async def movie_handler(client: Client, message: Message):
     """Movie/Series lookup plugin using OMDb API."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "❌ **Usage:** `.movie <movie name>`")
+        return await edit_or_reply(message, "❌ **Usage:** `.movie <movie name>`")
 
     query = " ".join(args)
-    status_msg = await smart_reply(message, f"🎬 **Searching for Movie:** `{query}`...")
+    status_msg = await edit_or_reply(message, f"🎬 **Searching for Movie:** `{query}`...")
 
     try:
         # Using a public OMDb API key (common for open source tools)

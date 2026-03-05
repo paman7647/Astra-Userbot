@@ -22,15 +22,15 @@ async def pinchat_handler(client: Client, message: Message):
     try:
         if unpin:
             await api.pin_chat(message.chat_id)
-            await smart_reply(message, "📌 Chat unpinned.")
+            await edit_or_reply(message, "📌 Chat unpinned.")
         else:
             result = await api.pin_chat(message.chat_id)
             if result:
-                await smart_reply(message, "📌 Chat pinned.")
+                await edit_or_reply(message, "📌 Chat pinned.")
             else:
-                await smart_reply(message, "⚠️ Max pinned chats reached (3). Unpin one first.")
+                await edit_or_reply(message, "⚠️ Max pinned chats reached (3). Unpin one first.")
     except Exception as e:
-        await smart_reply(message, f"❌ Failed: {e}")
+        await edit_or_reply(message, f"❌ Failed: {e}")
 
 
 @astra_command(
@@ -42,7 +42,7 @@ async def pinchat_handler(client: Client, message: Message):
 )
 async def clearchat_handler(client: Client, message: Message):
     """Clears all messages in the current chat."""
-    status = await smart_reply(message, "🗑️ Clearing chat...")
+    status = await edit_or_reply(message, "🗑️ Clearing chat...")
     try:
         await client._engine_api.clear_chat(message.chat_id)
         await status.edit("✅ Chat cleared.")
@@ -62,7 +62,7 @@ async def delchat_handler(client: Client, message: Message):
     try:
         await client._engine_api.delete_chat(message.chat_id)
     except Exception as e:
-        await smart_reply(message, f"❌ Failed: {e}")
+        await edit_or_reply(message, f"❌ Failed: {e}")
 
 
 @astra_command(
@@ -77,10 +77,10 @@ async def numcheck_handler(client: Client, message: Message):
     """Checks if a number is registered on WhatsApp."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "⚠️ **Usage:** `.numcheck <number>`")
+        return await edit_or_reply(message, "⚠️ **Usage:** `.numcheck <number>`")
 
     number = args[0].replace("+", "").replace(" ", "")
-    status = await smart_reply(message, f"🔍 Checking {number}...")
+    status = await edit_or_reply(message, f"🔍 Checking {number}...")
 
     try:
         result = await client._engine_api.get_number_id(number)
@@ -113,9 +113,9 @@ async def commongroups_handler(client: Client, message: Message):
         contact_id = f"{num}@c.us"
 
     if not contact_id:
-        return await smart_reply(message, "⚠️ Reply to a user or provide a number.")
+        return await edit_or_reply(message, "⚠️ Reply to a user or provide a number.")
 
-    status = await smart_reply(message, "🔍 Finding common groups...")
+    status = await edit_or_reply(message, "🔍 Finding common groups...")
 
     try:
         groups = await client._engine_api.get_common_groups(contact_id)
@@ -145,10 +145,10 @@ async def search_handler(client: Client, message: Message):
     """Searches messages matching a query."""
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "⚠️ **Usage:** `.search <query>`")
+        return await edit_or_reply(message, "⚠️ **Usage:** `.search <query>`")
 
     query = " ".join(args)
-    status = await smart_reply(message, f"🔍 Searching for: _{query}_...")
+    status = await edit_or_reply(message, f"🔍 Searching for: _{query}_...")
 
     try:
         results = await client._engine_api.search_messages(query, chat_id=message.chat_id, limit=10)
@@ -184,14 +184,14 @@ async def presence_handler(client: Client, message: Message):
     elif cmd == "offline" or (args and args[0].lower() in ("off", "offline", "unavailable")):
         available = False
     else:
-        return await smart_reply(message, "⚠️ **Usage:** `.presence <on|off>`")
+        return await edit_or_reply(message, "⚠️ **Usage:** `.presence <on|off>`")
 
     try:
         await client._engine_api.send_presence(available)
         state = "online" if available else "offline"
-        await smart_reply(message, f"✅ Presence set to **{state}**.")
+        await edit_or_reply(message, f"✅ Presence set to **{state}**.")
     except Exception as e:
-        await smart_reply(message, f"❌ Failed: {e}")
+        await edit_or_reply(message, f"❌ Failed: {e}")
 
 
 @astra_command(
@@ -205,9 +205,9 @@ async def archive_handler(client: Client, message: Message):
     """Archives the current chat."""
     try:
         await client._engine_api.archive_chat(message.chat_id)
-        await smart_reply(message, "📦 Chat archived.")
+        await edit_or_reply(message, "📦 Chat archived.")
     except Exception as e:
-        await smart_reply(message, f"❌ Failed: {e}")
+        await edit_or_reply(message, f"❌ Failed: {e}")
 
 
 @astra_command(
@@ -221,11 +221,11 @@ async def archive_handler(client: Client, message: Message):
 async def forward_handler(client: Client, message: Message):
     """Forwards a replied message to another chat."""
     if not message.has_quoted_msg:
-        return await smart_reply(message, "⚠️ Reply to a message to forward it.")
+        return await edit_or_reply(message, "⚠️ Reply to a message to forward it.")
 
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, "⚠️ **Usage:** `.forward <chat_id>` (reply to msg)")
+        return await edit_or_reply(message, "⚠️ **Usage:** `.forward <chat_id>` (reply to msg)")
 
     target = args[0]
     if not ("@c.us" in target or "@g.us" in target):
@@ -233,9 +233,9 @@ async def forward_handler(client: Client, message: Message):
 
     try:
         await client._engine_api.forward_message(target, message.quoted.id)
-        await smart_reply(message, f"↗️ Forwarded to `{target.split('@')[0]}`")
+        await edit_or_reply(message, f"↗️ Forwarded to `{target.split('@')[0]}`")
     except Exception as e:
-        await smart_reply(message, f"❌ Failed: {e}")
+        await edit_or_reply(message, f"❌ Failed: {e}")
 
 
 @astra_command(
@@ -263,8 +263,8 @@ async def profilepic_handler(client: Client, message: Message):
     try:
         url = await client._engine_api.get_profile_pic_url(contact_id)
         if url:
-            await smart_reply(message, f"🖼️ **Profile Picture:**\n{url}")
+            await edit_or_reply(message, f"🖼️ **Profile Picture:**\n{url}")
         else:
-            await smart_reply(message, "❌ Profile picture not available (privacy or not set).")
+            await edit_or_reply(message, "❌ Profile picture not available (privacy or not set).")
     except Exception as e:
-        await smart_reply(message, f"❌ Error: {e}")
+        await edit_or_reply(message, f"❌ Error: {e}")

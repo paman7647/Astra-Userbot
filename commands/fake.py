@@ -25,7 +25,7 @@ async def fake_handler(client: Client, message: Message):
     """
     Fetches random user data and formats it into an identity card.
     """
-    status_msg = await smart_reply(message, " 🕵️ *Generating fake identity...*")
+    status_msg = await edit_or_reply(message, " 🕵️ *Generating fake identity...*")
 
     url = "https://randomuser.me/api/"
     async with aiohttp.ClientSession() as session:

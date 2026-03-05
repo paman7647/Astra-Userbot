@@ -13,11 +13,11 @@ async def apply_filter(client: Client, message: Message, filter_type: str):
     is_image = message.type == MessageType.IMAGE
     has_quoted_image = message.has_quoted_msg and message.quoted_type == MessageType.IMAGE
     if not is_image and not has_quoted_image:
-        return await smart_reply(
+        return await edit_or_reply(
             message, "🖼️ **Image Tools**\n━━━━━━━━━━━━━━━━━━━━\n❌ **Reply to an image** to apply this filter."
         )
 
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message, f"🎨 **Astra Creative Studio**\n━━━━━━━━━━━━━━━━━━━━\n✨ *Applying {filter_type} filter...*"
     )
 

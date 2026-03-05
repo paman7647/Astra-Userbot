@@ -45,7 +45,7 @@ async def sudo_handler(client: Client, message: Message):
 
     # 2. Validation
     if not target_uid:
-        return await smart_reply(
+        return await edit_or_reply(
             message,
             " 📋 **Sudo Management Utility**\n\n"
             f"**Usage:** `{config.PREFIX}sudo <add|rem>` (as reply)\n"
@@ -57,30 +57,30 @@ async def sudo_handler(client: Client, message: Message):
     # Prevent self-sudo (not needed)
     me = await client.get_me()
     if target_uid == me.id.serialized:
-        return await smart_reply(message, " 🤖 The bot account always has implicit sudo privileges.")
+        return await edit_or_reply(message, " 🤖 The bot account always has implicit sudo privileges.")
 
     # 3. Execution
     if action in ["add", "promote"]:
         if state.is_sudo(target_uid):
-            return await smart_reply(message, f" ℹ️ `{target_uid}` is already in the sudo registry.")
+            return await edit_or_reply(message, f" ℹ️ `{target_uid}` is already in the sudo registry.")
 
         state.add_sudo(target_uid)
-        await smart_reply(
+        await edit_or_reply(
             message, f" 🛡️ **Privileges Granted!**\nUser `{target_uid}` can now execute administrative commands."
         )
 
     elif action in ["rem", "remove", "demote"]:
         if not state.is_sudo(target_uid):
-            return await smart_reply(message, f" ❌ `{target_uid}` is not a registered sudo user.")
+            return await edit_or_reply(message, f" ❌ `{target_uid}` is not a registered sudo user.")
 
         # Update state memory
         state.state["sudo_users"].remove(target_uid)
         # Persist change
         await asyncio.to_thread(state.save)
 
-        await smart_reply(
+        await edit_or_reply(
             message, f" 🗑️ **Privileges Revoked.**\nUser `{target_uid}` removed from the sudo registry."
         )
 
     else:
-        await smart_reply(message, f" ❌ Unrecognized action: `{action}`. Use `add` or `rem`.")
+        await edit_or_reply(message, f" ❌ Unrecognized action: `{action}`. Use `add` or `rem`.")

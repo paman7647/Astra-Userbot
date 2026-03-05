@@ -51,7 +51,7 @@ def get_size_format(b, factor=1024, suffix="B"):
 async def restart_cmd(client: Client, message: Message):
     """Restart Bot"""
     uptime = get_uptime_str()
-    await smart_reply(
+    await edit_or_reply(
         message, 
         f"🔄 **Astra System Reboot**\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
@@ -72,7 +72,7 @@ async def restart_cmd(client: Client, message: Message):
 async def shutdown_cmd(client: Client, message: Message):
     """Shutdown Bot"""
     uptime = get_uptime_str()
-    await smart_reply(
+    await edit_or_reply(
         message, 
         f"⏻ **Astra Power Off**\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
@@ -93,7 +93,7 @@ async def shutdown_cmd(client: Client, message: Message):
 )
 async def health_cmd(client: Client, message: Message):
     """System Health Diagnostics"""
-    status_msg = await smart_reply(message, "🏥 **Astra Diagnostics**\n━━━━━━━━━━━━━━━━━━━━\n🧬 *Scanning system vitals...*")
+    status_msg = await edit_or_reply(message, "🏥 **Astra Diagnostics**\n━━━━━━━━━━━━━━━━━━━━\n🧬 *Scanning system vitals...*")
     
     try:
         # 1. System Metrics
@@ -154,7 +154,7 @@ async def sysinfo_cmd(client: Client, message: Message):
             f"📅 **Booted:** `{datetime.fromtimestamp(BOOT_TIME).strftime('%Y-%m-%d %H:%M:%S')}`\n"
             f"━━━━━━━━━━━━━━━━━━━━"
         )
-        await smart_reply(message, report)
+        await edit_or_reply(message, report)
     except Exception as e:
         from utils.error_reporter import ErrorReporter
         await ErrorReporter.report(client, message, e, context="SysInfo Failure")
@@ -179,7 +179,7 @@ async def update_cmd(client: Client, message: Message):
         if len(args) > idx + 1:
             branch = args[idx + 1]
     
-    status_msg = await smart_reply(message, f"📡 **Astra Update Engine**\n━━━━━━━━━━━━━━━━━━━━\n🔍 *Syncing with `{branch}`...*")
+    status_msg = await edit_or_reply(message, f"📡 **Astra Update Engine**\n━━━━━━━━━━━━━━━━━━━━\n🔍 *Syncing with `{branch}`...*")
     
     try:
         if not os.path.exists(".git"):
@@ -354,7 +354,7 @@ async def update_cmd(client: Client, message: Message):
 )
 async def reload_cmd(client: Client, message: Message):
     """Hot-reloads all plugins and project modules."""
-    status_msg = await smart_reply(message, "⏳ **Astra Hot-Reload**\n━━━━━━━━━━━━━━━━━━━━\n🔄 *Resyncing all modules...*")
+    status_msg = await edit_or_reply(message, "⏳ **Astra Hot-Reload**\n━━━━━━━━━━━━━━━━━━━━\n🔄 *Resyncing all modules...*")
     
     try:
         from utils.plugin_utils import reload_all_plugins
@@ -385,9 +385,9 @@ async def logs_cmd(client: Client, message: Message):
 
     log_file = "astra_full_debug.txt"
     if not os.path.exists(log_file):
-        return await smart_reply(message, "❌ **Error:** Log file not found.")
+        return await edit_or_reply(message, "❌ **Error:** Log file not found.")
 
-    status_msg = await smart_reply(message, "⏳ **Fetching Terminal Logs...**")
+    status_msg = await edit_or_reply(message, "⏳ **Fetching Terminal Logs...**")
 
     # ── Noise Reduction Engine ──
     # Patterns that indicate startup noise (collapsed into single markers)
@@ -471,7 +471,7 @@ async def logs_cmd(client: Client, message: Message):
     await status_msg.edit(output)
 
     if is_full:
-        status2 = await smart_reply(message, "📤 *Uploading full log file...*")
+        status2 = await edit_or_reply(message, "📤 *Uploading full log file...*")
         import base64
         with open(log_file, "rb") as f:
             b64_data = base64.b64encode(f.read()).decode("utf-8")
@@ -489,7 +489,7 @@ async def logs_cmd(client: Client, message: Message):
 )
 async def clearcache_cmd(client: Client, message: Message):
     """Purges the media cache directory."""
-    status_msg = await smart_reply(message, "🧹 **Maintenance**\n━━━━━━━━━━━━━━━━━━━━\n🗑️ *Clearing media cache...*")
+    status_msg = await edit_or_reply(message, "🧹 **Maintenance**\n━━━━━━━━━━━━━━━━━━━━\n🗑️ *Clearing media cache...*")
     try:
         from utils.cache_manager import cache
         result = cache.clear_cache()
@@ -511,7 +511,7 @@ async def clearcache_cmd(client: Client, message: Message):
 async def start_cmd(client: Client, message: Message):
     """Test command to verify bot responsiveness."""
     try:
-        msg = await smart_reply(message, "🤖 **Scanning Astra core...**")
+        msg = await edit_or_reply(message, "🤖 **Scanning Astra core...**")
         await asyncio.sleep(0.5)
         await msg.edit("🤖 **Astra Userbot is active!**\n\n🚀 _System core is responsive and ready for your commands._")
     except Exception as e:

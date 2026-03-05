@@ -23,7 +23,7 @@ async def define_handler(client: Client, message: Message):
     """
     args_list = extract_args(message)
     if not args_list:
-        return await smart_reply(message, " 📋 **Dictionary Utility**\n\nPlease provide a word to define.")
+        return await edit_or_reply(message, " 📋 **Dictionary Utility**\n\nPlease provide a word to define.")
 
     word = args_list[0].lower()
     async with aiohttp.ClientSession() as session:
@@ -31,7 +31,7 @@ async def define_handler(client: Client, message: Message):
             f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}", timeout=aiohttp.ClientTimeout(total=10)
         ) as resp:
             if resp.status != 200:
-                return await smart_reply(message, f" ❌ **Word Not Found:** `{word}`")
+                return await edit_or_reply(message, f" ❌ **Word Not Found:** `{word}`")
 
             data = await resp.json()
             entry = data[0]
@@ -48,4 +48,4 @@ async def define_handler(client: Client, message: Message):
                 f"🌐 *Source: DictionaryAPI*"
             )
 
-            await smart_reply(message, report)
+            await edit_or_reply(message, report)

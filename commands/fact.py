@@ -27,7 +27,7 @@ async def fact_handler(client: Client, message: Message):
     async with aiohttp.ClientSession() as session:
         async with session.get(FACT_API_URL, timeout=aiohttp.ClientTimeout(total=10)) as resp:
             if resp.status != 200:
-                return await smart_reply(message, "⚠️ **Astra Knowledge Base:** Trivia service offline.")
+                return await edit_or_reply(message, "⚠️ **Astra Knowledge Base:** Trivia service offline.")
 
             data = await resp.json()
-            await smart_reply(message, f"💡 **Astra Fact Generator**\n━━━━━━━━━━━━━━━━━━━━\n{data['text']}")
+            await edit_or_reply(message, f"💡 **Astra Fact Generator**\n━━━━━━━━━━━━━━━━━━━━\n{data['text']}")

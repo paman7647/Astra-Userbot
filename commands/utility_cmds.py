@@ -36,11 +36,11 @@ async def carbon_handler(client: Client, message: Message):
         code = " ".join(args_list)
 
     if not code:
-        return await smart_reply(
+        return await edit_or_reply(
             message, "💻 **Astra Carbon Utility**\n━━━━━━━━━━━━━━━━━━━━\n❌ **Usage:** Reply to code or paste text."
         )
 
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message, "🎨 **Astra Carbon Utility**\n━━━━━━━━━━━━━━━━━━━━\n✨ *Generating high-res image...*"
     )
 
@@ -76,7 +76,7 @@ async def quotly_handler(client: Client, message: Message):
     Usage: .q [count] (reply to start message)
     """
     if not message.has_quoted_msg:
-        return await smart_reply(
+        return await edit_or_reply(
             message, "🗨️ **Astra Quotly**\n━━━━━━━━━━━━━━━━━━━━\n❌ **Usage:** Reply to a message to quote it."
         )
 
@@ -85,7 +85,7 @@ async def quotly_handler(client: Client, message: Message):
     if args and args[0].isdigit():
         count = min(int(args[0]), 10)  # Cap at 10 for performance
 
-    status_msg = await smart_reply(
+    status_msg = await edit_or_reply(
         message,
         f"🎨 **Astra Quotly**\n━━━━━━━━━━━━━━━━━━━━\n✨ *Rendering sequence {'(x' + str(count) + ')' if count > 1 else ''}...*",
     )

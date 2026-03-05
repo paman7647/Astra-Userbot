@@ -20,7 +20,7 @@ async def admin_handler(client: Client, message: Message):
 
     if not args_list:
         usage = "<kick|add|promote|demote|tagall|create|leave> [@user|title]"
-        return await smart_reply(message, f"⚠️ **Usage:** `{config.PREFIX}admin {usage}`")
+        return await edit_or_reply(message, f"⚠️ **Usage:** `{config.PREFIX}admin {usage}`")
 
     is_group = str(message.chat_id).endswith("@g.us")
     action = args_list[0].lower()
@@ -29,7 +29,7 @@ async def admin_handler(client: Client, message: Message):
 
     if action == "create":
         if len(args_list) < 2:
-            return await smart_reply(message, "Please provide a group title.")
+            return await edit_or_reply(message, "Please provide a group title.")
         me = await client.get_me()
         participants = [str(me.id)]
         title_parts = []
@@ -63,14 +63,14 @@ async def admin_handler(client: Client, message: Message):
             except Exception as e:
                 invite_link = f"(Failed to get invite link: {e})"
 
-        await smart_reply(message, f" ✅ Group *{title}* created!\nID: `{gid}`\nLink: {invite_link}")
+        await edit_or_reply(message, f" ✅ Group *{title}* created!\nID: `{gid}`\nLink: {invite_link}")
         return
 
     if not is_group:
-        return await smart_reply(message, "This action only works in groups.")
+        return await edit_or_reply(message, "This action only works in groups.")
 
     if action == "leave":
-        await smart_reply(message, "👋 **Astra Admin:** Leaving group...")
+        await edit_or_reply(message, "👋 **Astra Admin:** Leaving group...")
         await client.group.leave(message.chat_id)
         return
 
@@ -108,30 +108,30 @@ async def admin_handler(client: Client, message: Message):
 
     if action in ["kick", "remove"]:
         if not target_ids:
-            return await smart_reply(message, "Mention users or reply to their message to kick.")
+            return await edit_or_reply(message, "Mention users or reply to their message to kick.")
         await client.group.remove_participants(message.chat_id, target_ids)
-        await smart_reply(message, f"Processed `{len(target_ids)}` removals.")
+        await edit_or_reply(message, f"Processed `{len(target_ids)}` removals.")
 
     elif action == "add":
         if not target_ids:
-            return await smart_reply(message, "Provide user IDs, phone numbers or mention someone to add.")
+            return await edit_or_reply(message, "Provide user IDs, phone numbers or mention someone to add.")
         await client.group.add_participants(message.chat_id, target_ids)
-        await smart_reply(message, f"Processed `{len(target_ids)}` additions.")
+        await edit_or_reply(message, f"Processed `{len(target_ids)}` additions.")
 
     elif action == "promote":
         if not target_ids:
-            return await smart_reply(message, "Mention users to promote.")
+            return await edit_or_reply(message, "Mention users to promote.")
         await client.group.promote_participants(message.chat_id, target_ids)
-        await smart_reply(message, f"Processed `{len(target_ids)}` promotions.")
+        await edit_or_reply(message, f"Processed `{len(target_ids)}` promotions.")
 
     elif action == "demote":
         if not target_ids:
-            return await smart_reply(message, "Mention users to demote.")
+            return await edit_or_reply(message, "Mention users to demote.")
         await client.group.demote_participants(message.chat_id, target_ids)
-        await smart_reply(message, f"Processed `{len(target_ids)}` demotions.")
+        await edit_or_reply(message, f"Processed `{len(target_ids)}` demotions.")
 
     elif action in ["tagall", "everyone"]:
-        status = await smart_reply(message, "Tagging everyone...")
+        status = await edit_or_reply(message, "Tagging everyone...")
         info = await client.group.get_info(message.chat_id)
         if not info or not info.participants:
             time.sleep(0.5)
@@ -148,7 +148,7 @@ async def admin_handler(client: Client, message: Message):
         await status.delete()
 
     else:
-        await smart_reply(message, " Unknown action. Use kick, add, promote, demote, tagall, create, leave.")
+        await edit_or_reply(message, " Unknown action. Use kick, add, promote, demote, tagall, create, leave.")
 
 
 @astra_command(
@@ -165,12 +165,12 @@ async def reload_handler(client: Client, message: Message):
 
     args = extract_args(message)
     if not args:
-        return await smart_reply(message, " Provide a plugin name to reload (or 'all').")
+        return await edit_or_reply(message, " Provide a plugin name to reload (or 'all').")
 
     target = args[0].lower()
 
     if target == "all":
-        status_msg = await smart_reply(message, " 🔄 Reloading ALL plugins...")
+        status_msg = await edit_or_reply(message, " 🔄 Reloading ALL plugins...")
         count = 0
         failed = []
 
@@ -210,9 +210,9 @@ async def reload_handler(client: Client, message: Message):
     file_path = os.path.join(commands_dir, f"{target}.py")
 
     if not os.path.exists(file_path) and plugin_name not in PLUGIN_HANDLES:
-        return await smart_reply(message, f" ❌ Plugin '{target}' not found.")
+        return await edit_or_reply(message, f" ❌ Plugin '{target}' not found.")
 
-    status_msg = await smart_reply(message, f" 🔄 Reloading `{target}`...")
+    status_msg = await edit_or_reply(message, f" 🔄 Reloading `{target}`...")
 
     # 3. specific unload/load
     unload_plugin(client, plugin_name)
