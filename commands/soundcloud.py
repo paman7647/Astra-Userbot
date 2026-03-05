@@ -1,7 +1,7 @@
 from utils.media_channel import MediaChannel
 
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 
 @astra_command(

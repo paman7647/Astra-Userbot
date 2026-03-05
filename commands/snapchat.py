@@ -1,6 +1,6 @@
 import os
 import asyncio
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 import cv2
 import numpy as np
 from PIL import Image

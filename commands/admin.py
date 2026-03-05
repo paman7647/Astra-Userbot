@@ -3,7 +3,7 @@ import time
 from utils.plugin_utils import PLUGIN_HANDLES, load_plugin, unload_plugin
 
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 
 @astra_command(

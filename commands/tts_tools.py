@@ -4,7 +4,7 @@ from gtts import gTTS
 
 from utils.plugin_utils import extract_args
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 @astra_command(
     name="tts", 

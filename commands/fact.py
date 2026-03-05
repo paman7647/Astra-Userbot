@@ -7,7 +7,7 @@ Delivers useless but interesting facts from public APIs.
 import aiohttp
 
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 # Configuration: Reliable public trivia API
 FACT_API_URL = "https://uselessfacts.jsph.pl/random.json?language=en"

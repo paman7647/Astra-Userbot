@@ -5,7 +5,7 @@ import time
 from utils.bridge_downloader import bridge_downloader
 from utils.plugin_utils import extract_args
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 async def apply_audio_effect(client: Client, message: Message, effect: str):
     is_audio = message.type == MessageType.AUDIO

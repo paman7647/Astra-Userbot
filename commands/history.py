@@ -8,7 +8,7 @@ Experimental tool for range-based message retrieval.
 import time
 
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 
 @astra_command(

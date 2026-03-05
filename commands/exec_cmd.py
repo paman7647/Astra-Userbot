@@ -7,7 +7,7 @@ import uuid
 from typing import Optional
 
 from . import *  # Astra helpers (astra_command, extract_args, edit_or_reply)
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 # Package mapping notes: linux (apt) vs darwin (brew)
 # Verified package names for Ubuntu 22.04/24.04 and macOS

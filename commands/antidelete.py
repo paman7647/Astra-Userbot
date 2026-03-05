@@ -3,7 +3,7 @@ import logging
 from utils.database import db
 
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 logger = logging.getLogger("Plugins.AntiDelete")
 

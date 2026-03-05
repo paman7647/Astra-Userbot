@@ -8,7 +8,7 @@ WARNING: Use with caution to avoid account bans.
 import asyncio
 
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 
 @astra_command(

@@ -10,7 +10,7 @@ import traceback
 from datetime import datetime
 from config import config
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 # Utility for uptime calculation
 from utils.state import BOOT_TIME

@@ -5,7 +5,7 @@ import random
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 # Configuration
 LOGOS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "utils", "logos")

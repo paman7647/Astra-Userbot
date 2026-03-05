@@ -6,7 +6,7 @@ from utils.bridge_downloader import bridge_downloader
 from utils.plugin_utils import extract_args
 
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 
 async def apply_filter(client: Client, message: Message, filter_type: str):

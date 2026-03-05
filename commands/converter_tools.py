@@ -4,7 +4,7 @@ import time
 from utils.bridge_downloader import bridge_downloader
 from utils.plugin_utils import extract_args
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 @astra_command(name="todoc", description="Convert an image or video to a document file.", category="Tools & Utilities", aliases=["todocument"])
 async def todoc_handler(client: Client, message: Message):

@@ -12,7 +12,7 @@ import aiohttp
 from utils.helpers import get_contact_name, safe_edit
 
 from . import *
-from utils.helpers import edit_or_reply, smart_reply
+from utils.helpers import edit_or_reply
 
 
 # --- CARBON CODE IMAGE ---
