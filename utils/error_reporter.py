@@ -86,7 +86,7 @@ class ErrorReporter:
         if not gid:
             return False
         try:
-            await client.chat.send_message(gid, text)
+            await client.send_message(gid, text)
             return True
         except Exception as e:
             logger.warning(f"Failed to send to error group: {e}")
@@ -95,13 +95,9 @@ class ErrorReporter:
     @classmethod
     async def _send_to_owner(cls, client, text: str) -> bool:
         try:
-            from config import config
-            if not config.OWNER_ID:
-                return False
-            owner_id = str(config.OWNER_ID)
-            if "@" not in owner_id:
-                owner_id = f"{owner_id}@s.whatsapp.net"
-            await client.chat.send_message(owner_id, text)
+            me = await client.get_me()
+            target_id = me.id.serialized if hasattr(me.id, "serialized") else str(me.id)
+            await client.send_message(target_id, text)
             return True
         except Exception as e:
             logger.warning(f"Failed to send to owner DM: {e}")
