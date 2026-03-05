@@ -387,47 +387,77 @@ async def logs_cmd(client: Client, message: Message):
     if not os.path.exists(log_file):
         return await smart_reply(message, "❌ **Error:** Log file not found.")
 
-    status_msg = await smart_reply(message, "⏳ **Analysing Astra Logs...**")
+    status_msg = await smart_reply(message, "⏳ **Fetching Terminal Logs...**")
 
-    # 1. Read Logs with Noise Reduction
-    def get_filtered_logs(filename, n=150):
-        from collections import deque
+    # ── Noise Reduction Engine ──
+    # Patterns that indicate startup noise (collapsed into single markers)
+    NOISE_PATTERNS = [
+        "ASTRA BOT STARTUP",
+        "=" * 20,
+        "Applied stability patch",
+        "Applied framework patch",
+        "randomized delays",
+        "Message.edit now uses",
+    ]
 
+    def is_noise(line: str) -> bool:
+        stripped = line.strip()
+        if not stripped:
+            return True
+        for pattern in NOISE_PATTERNS:
+            if pattern in stripped:
+                return True
+        return False
+
+    def extract_timestamp(line: str) -> str:
+        """Try to extract timestamp from a log line."""
+        parts = line.split(" - ", 1)
+        if parts:
+            ts = parts[0].strip()
+            if len(ts) > 10:
+                return ts
+        return ""
+
+    def get_filtered_logs(filename, n=200):
         with open(filename, "r", encoding="utf-8", errors="ignore") as f:
             all_lines = list(f)
 
-        # Noise Reduction: Collapse consecutive startup banners
         filtered = []
-        skip_mode = False
-        startup_marker = "ASTRA BOT STARTUP"
+        in_noise_block = False
+        last_startup_ts = None
 
         for line in all_lines:
-            if startup_marker in line:
-                if not skip_mode:
-                    filtered.append(line)
-                    skip_mode = True
+            if is_noise(line):
+                # Track timestamp from startup lines
+                ts = extract_timestamp(line)
+                if ts:
+                    last_startup_ts = ts
+                in_noise_block = True
                 continue
-            else:
-                skip_mode = False
+
+            # When exiting a noise block, insert a single marker
+            if in_noise_block:
+                in_noise_block = False
+                if last_startup_ts:
+                    filtered.append(f"── 🔄 Restarted at {last_startup_ts} ──\n")
+                last_startup_ts = None
+
             filtered.append(line)
 
-        # Return last N filtered lines
         return filtered[-n:]
 
     lines = get_filtered_logs(log_file)
-    log_content = "".join(lines)
+    log_content = "".join(lines).strip()
 
     if not log_content:
-        return await status_msg.edit("ℹ️ **Console is empty.**")
+        return await status_msg.edit("ℹ️ **Console is empty** — no meaningful events logged yet.")
 
-    # 2. Advanced Truncation & Formatting
+    # Truncation for WhatsApp message limits
     if len(log_content) > 3500:
         log_content = "...\n" + log_content[-3500:]
 
-    # Resolve Current Time in Indian Timezone
     from datetime import datetime
     from zoneinfo import ZoneInfo
-
     now_india = datetime.now(ZoneInfo(config.TIMEZONE)).strftime("%H:%M:%S")
 
     output = (
@@ -435,20 +465,20 @@ async def logs_cmd(client: Client, message: Message):
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f"```\n{log_content}\n```\n"
         f"🕒 **Fetched at:** `{now_india}`\n"
-        f"✨ *Noise reduction active.*"
+        f"✨ *{len(lines)} lines shown (noise filtered).*"
     )
 
     await status_msg.edit(output)
 
     if is_full:
-        await smart_reply(message, "📤 *Uploading full log file...*")
+        status2 = await smart_reply(message, "📤 *Uploading full log file...*")
         import base64
-
         with open(log_file, "rb") as f:
             b64_data = base64.b64encode(f.read()).decode("utf-8")
-
         media = {"mimetype": "text/plain", "data": b64_data, "filename": "astra_full_logs.txt"}
         await client.send_media(message.chat_id, media, caption="📄 **Full Astra System Logs**", reply_to=message.id)
+        await status2.delete()
+
 
 @astra_command(
     name="clearcache",
