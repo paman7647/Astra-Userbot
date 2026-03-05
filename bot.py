@@ -1,8 +1,5 @@
 """
-Astra Userbot Core
-------------------
-Main entry point for the Astra Userbot. Handles initialization,
-plugin loading, and event loop management.
+Astra Userbot — Main Entry Point
 """
 
 import asyncio
@@ -18,77 +15,48 @@ from typing import *
 import requests
 from flask import Flask
 
-# Setup Script Directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from utils.logger import Colors, setup_logging
-
 from astra import Client, Message
 
-# 1. Initialize Modern Logging
 setup_logging(SCRIPT_DIR)
 logger = logging.getLogger("AstraBot")
 
 
-# --- Framework Monkey-Patching (Stability & Rate-Limiting) ---
+# --- Stability Patches ---
 def apply_framework_patches():
-    """
-    Applies runtime patches to the Astra framework to enhance stability
-    specifically for the userbot environment.
-    """
-    # Patch Message.edit to include randomized delays (Fixes [E3006])
     original_edit = Message.edit
 
     async def patched_edit(self, text: str) -> bool:
-        # WhatsApp has strict rate limits for edits.
-        # Randomized delays help avoid detection and race conditions.
         await asyncio.sleep(random.uniform(0.4, 1.2))
         return await original_edit(self, text)
 
     Message.edit = patched_edit
-    logger.info("🔧 Applied stability patch: Message.edit now uses randomized delays (0.4s - 1.2s).")
 
-
-# Apply patches early
 apply_framework_patches()
 
-# Initial configuration load
 from config import config
 
 
 def print_banner():
-    """Renders a futuristic, minimalist branding banner."""
     import socket
-
     ip = "127.0.0.1"
     try:
         ip = socket.gethostbyname(socket.gethostname())
     except:
         pass
 
-    # Futuristic thin-line layout
     print(f"\n {Colors.BOLD}{Colors.CYAN}ASTRA{Colors.END} {Colors.GRAY}MANAGED INSTANCE{Colors.END}")
     print(f" {Colors.GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.END}")
-    print(
-        f" {Colors.CYAN}IDENT{Colors.END}  {Colors.BOLD}userbot{Colors.END} {Colors.GRAY}@{Colors.END} {config.VERSION}"
-    )
-    print(
-        f" {Colors.CYAN}NETID{Colors.END}  {Colors.BOLD}{ip}{Colors.END} {Colors.GRAY}»{Colors.END} {Colors.GREEN}SECURE{Colors.END}"
-    )
-    print(
-        f" {Colors.CYAN}STATE{Colors.END}  {Colors.BOLD}ACTIVE{Colors.END}   {Colors.GRAY}»{Colors.END} {Colors.BLUE}HEADLESS{Colors.END}"
-    )
-    print(
-        f" {Colors.CYAN}PROC {Colors.END}  {Colors.BOLD}{os.getpid()}{Colors.END}   {Colors.GRAY}»{Colors.END} {Colors.BOLD}STABLE{Colors.END}"
-    )
+    print(f" {Colors.CYAN}IDENT{Colors.END}  {Colors.BOLD}userbot{Colors.END} {Colors.GRAY}@{Colors.END} {config.VERSION}")
+    print(f" {Colors.CYAN}NETID{Colors.END}  {Colors.BOLD}{ip}{Colors.END} {Colors.GRAY}»{Colors.END} {Colors.GREEN}SECURE{Colors.END}")
+    print(f" {Colors.CYAN}STATE{Colors.END}  {Colors.BOLD}ACTIVE{Colors.END}   {Colors.GRAY}»{Colors.END} {Colors.BLUE}HEADLESS{Colors.END}")
+    print(f" {Colors.CYAN}PROC {Colors.END}  {Colors.BOLD}{os.getpid()}{Colors.END}   {Colors.GRAY}»{Colors.END} {Colors.BOLD}STABLE{Colors.END}")
     print(f" {Colors.GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.END}\n")
 
 
-# Bridge Patch for Web Dashboard
 def patch_authenticator(client_instance):
-    """
-    Redirects QR and Pairing code data to files for the web dashboard (render.py).
-    """
     auth = client_instance.authenticator
     original_qr = auth._display_qr
     original_code = auth._display_code
@@ -105,179 +73,114 @@ def patch_authenticator(client_instance):
 
     auth._display_qr = patched_qr
     auth._display_code = patched_code
-    logger.info("✅ Authenticator patched for Web Dashboard support.")
 
 
-# Global Client Instance
+# --- Client ---
 client = Client(
     session_id=os.getenv("ASTRA_SESSION_ID", "X"),
     phone=os.getenv("PHONE_NUMBER") or os.getenv("BOT_OWNER_ID"),
     headless=os.getenv("ASTRA_HEADLESS", "True").lower() == "true",
 )
-
-# Apply patch immediately
 patch_authenticator(client)
 
 
-# -------------------- Flask (Render Health Check) -------------------- #
-
+# --- Flask Health Check ---
 app = Flask(__name__)
-
 
 @app.route("/")
 def home():
     return {"status": "Astra Userbot Running", "version": config.VERSION}
 
-
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
-    logging.info(f"[Flask] Running server on port {port}")
     app.run(host="0.0.0.0", port=port)
-
 
 def keep_alive():
     url = os.environ.get("PING_URL", "https://your-render-url.onrender.com").strip()
-
     while True:
         try:
-            logging.info(f"[KeepAlive] Pinging {url}")
             requests.get(url, timeout=10)
-        except Exception as e:
-            logging.warning(f"[KeepAlive] Failed to ping: {e}")
-
-        time.sleep(600)  # SAFE because it runs in thread
-
-
-async def main():
-    """Main runner for the Astra Userbot."""
-
-    loop = asyncio.get_running_loop()
-
-    # Graceful shutdown signals
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s)))
-
-    # Start Flask & Ping threads
-    threading.Thread(target=run_flask, daemon=True).start()
-    threading.Thread(target=keep_alive, daemon=True).start()
-
-    # Start Astra client
-    async with client:
-        logger.info("Astra Engine active. Listening for events...")
-        await client.run_forever()
+        except:
+            pass
+        time.sleep(600)
 
 
-# Event Handlers
-# --------------
-
+# --- Event Handlers ---
 
 @client.on("ready")
 async def on_ready(_):
-    """
-    Executed when the WhatsApp connection is established and the engine is ready.
-    Initializes plugins, database, and sends a startup notification.
-    """
     try:
         user = await client.get_me()
-
         print_banner()
-        logger.info(f"🚀 ASTRA USERBOT IS ONLINE! Logged in as: {user.name}")
+        logger.info(f"Logged in as {user.name}")
 
-        # 1. Initialize Persistent State Manager
+        # State
         from utils.state import state
-
         await state.initialize()
 
-        # 2. Dynamic Plugin Discovery
+        # Plugins
         commands_dir = os.path.join(SCRIPT_DIR, "commands")
+        loaded_plugins = []
         if os.path.exists(commands_dir):
             from utils.plugin_utils import load_plugin
-
-            loaded_plugins = []
             for f in os.listdir(commands_dir):
                 if f.endswith(".py") and not f.startswith("_"):
-                    plugin_name = f"commands.{f[:-3]}"
-                    if load_plugin(client, plugin_name):
+                    if load_plugin(client, f"commands.{f[:-3]}"):
                         loaded_plugins.append(f[:-3])
 
-            logger.info(f"Initialized {len(loaded_plugins)} modules: {', '.join(loaded_plugins)}")
-            print(f"📦 Modules: {len(loaded_plugins)} loaded.")
+        logger.info(f"{len(loaded_plugins)} plugins loaded")
 
-        # 3. Initialize Error Log Group (auto-create if not in DB, skip if exists)
+        # Error Log Group
         from utils.error_reporter import ErrorReporter
         await ErrorReporter.initialize(client)
-
-        # 4. Boot Notification → Error Log Group (falls back to DM)
-        plugin_count = len(loaded_plugins) if 'loaded_plugins' in dir() else 0
-        await ErrorReporter.boot_message(client, plugin_count)
+        await ErrorReporter.boot_message(client, len(loaded_plugins))
 
     except Exception as e:
-        logger.error(f"Critical error during startup sequence: {e}", exc_info=True)
+        logger.error(f"Startup failed: {e}", exc_info=True)
 
 
-# 4. PM Protection Integration
-# ---------------------------
+# PM Protection
 from utils.pm_permit_manager import enforce_pm_protection
-
 
 @client.on("message")
 async def pm_protection_listener(msg: Message):
-    """
-    Global listener for PM protection enforcement.
-    Intercepts messages in private chats and applies security filters.
-    """
     try:
-        # Ignore messages sent before bot startup to prevent flooding
         from utils.state import BOOT_TIME
-
         if getattr(msg, "timestamp", 0) < BOOT_TIME:
             return
-
-        # We don't block messages that already have a command match
-        # unless you want extreme protection. Usually, unpermitted
-        # users shouldn't even trigger commands.
-        # Here we just run the enforcement logic.
         await enforce_pm_protection(client, msg)
-    except Exception as e:
-        logger.error(f"Error in PM protection listener: {e}")
+    except:
+        pass
 
 
-# Application Lifecycle
-# --------------------
-
+# --- Lifecycle ---
 
 async def shutdown(sig: Optional[signal.Signals] = None):
-    """Gracefully shuts down the client and handles any cleanup."""
     if sig:
-        logger.info(f"Received exit signal {sig.name}...")
-
-    logger.info("Closing client session...")
+        logger.info(f"Received {sig.name}, shutting down...")
     try:
         if client.is_connected:
             await client.stop()
-    except Exception as e:
-        logger.debug(f"Error during client stop: {e}")
-
-    logger.info("Astra Userbot stopped. Goodbye!")
+    except:
+        pass
     sys.exit(0)
 
 
 async def main():
-    """Main runner for the Astra Userbot."""
-    # Register OS signal handlers for graceful shutdown
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s)))
 
-    # Start the client engine
+    threading.Thread(target=run_flask, daemon=True).start()
+    threading.Thread(target=keep_alive, daemon=True).start()
+
     async with client:
-        logger.info("Astra Engine active. Listening for events...")
         await client.run_forever()
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except Exception as fatal_err:
-        logger.critical(f"FATAL: Application crashed: {fatal_err}", exc_info=True)
+    except Exception as e:
+        logger.critical(f"FATAL: {e}", exc_info=True)
         sys.exit(1)

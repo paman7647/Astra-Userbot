@@ -136,10 +136,10 @@ class ErrorReporter:
     @classmethod
     async def report(cls, client, message, exc: Exception, context: str = "Command Failure"):
         """
-        Full error report: sends rich diagnostics to group/DM
-        and clean feedback to the user.
+        Full error report: sends rich diagnostics ONLY to the error log group
+        (or owner DM fallback). The user in the original chat only sees a
+        clean notification that an error was reported.
         """
-        from utils.media_exceptions import MediaException
         from utils.helpers import smart_reply
 
         # Rate limiting
@@ -150,7 +150,7 @@ class ErrorReporter:
             return
         _error_timestamps.append(now)
 
-        # Build diagnostic report
+        # Build diagnostic report (ONLY for group/DM)
         tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
         chat_info = ""
@@ -178,27 +178,25 @@ class ErrorReporter:
             f"*Stack Trace:*\n```\n{tb[:1500]}\n```"
         )
 
-        # Send to group (or DM fallback)
-        await cls.send(client, report_text)
+        # Send full details ONLY to error group or owner DM
+        sent_to_group = await cls._send_to_group(client, report_text)
+        sent_to_dm = False
+        if not sent_to_group:
+            sent_to_dm = await cls._send_to_owner(client, report_text)
 
-        # Send clean user-facing feedback
+        # Tell the user in the original chat — clean one-liner, no details
         try:
-            if isinstance(exc, MediaException):
-                error_text = (
-                    f"{exc.icon} *Astra Media Gateway*\n"
-                    f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"❌ *Error:* {exc.message}\n\n"
-                    f"💡 _Tip:_ Ensure the link is valid and publicly accessible."
-                )
+            if sent_to_group:
+                dest = "error log group"
+            elif sent_to_dm:
+                dest = "owner DM"
             else:
-                error_text = (
-                    f"⚠️ *Astra System Error*\n"
-                    f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"❌ Something went wrong while processing your request.\n\n"
-                    f"👤 *Details:* `{str(exc)[:100]}`\n"
-                    f"🛠️ _Report this at: github.com/paman7647/Astra-Userbot/issues_"
-                )
-            await smart_reply(message, error_text)
+                dest = "logs"
+
+            await smart_reply(
+                message,
+                f"⚠️ *An error occurred.* Details reported to *{dest}*."
+            )
         except:
             pass
 
