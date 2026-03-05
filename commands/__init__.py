@@ -15,6 +15,6 @@ from utils.plugin_utils import (
 )
 
 from astra import Client, Filters
-from astra.models import Message, MessageType
+from astra.types import Message, MessageType
 
 logger = logging.getLogger("Plugins")

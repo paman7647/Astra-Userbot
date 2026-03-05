@@ -8,7 +8,7 @@ from utils.helpers import get_contact_name, smart_reply
 from utils.state import state
 
 from astra import Client
-from astra.models import Message
+from astra.types import Message
 
 logger = logging.getLogger("Astra.PMPermit")
 

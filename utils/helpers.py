@@ -9,7 +9,7 @@ import time
 import traceback
 from typing import Optional
 
-from astra.models import Message
+from astra.types import Message
 
 # Core Utility Functions
 # ----------------------
@@ -143,7 +143,7 @@ async def get_contact_name(client, jid: str) -> str:
     Priority: Pushname > Contact Name > Formatted Number > Short JID
     """
     try:
-        from astra.models import JID
+        from astra.types import JID
 
         jid_obj = JID.parse(jid) if isinstance(jid, str) else jid
 

@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 from astra import Client
-from astra.models import Message
+from astra.types import Message
 
 logger = logging.getLogger("Astra.BridgeDownloader")
 

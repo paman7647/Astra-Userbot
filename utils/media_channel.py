@@ -17,7 +17,7 @@ from utils.media_exceptions import (
 from utils.progress import get_progress_bar
 
 from astra.client import Client
-from astra.models import Message
+from astra.types import Message
 
 
 class MediaChannel:
