@@ -10,7 +10,7 @@ from . import *
     name="stats",
     description="Description: View detailed system health, memory usage, and runtime metrics.\nSyntax: .stats\nExample: .stats",
     category="System",
-    aliases=["status", "sysinfo"],
+    aliases=[],
     usage=".stats (display bot statistics)",
     is_public=True,
 )

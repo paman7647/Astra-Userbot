@@ -159,6 +159,9 @@ async def sysinfo_cmd(client: Client, message: Message):
         from utils.error_reporter import ErrorReporter
         await ErrorReporter.report(client, message, e, context="SysInfo Failure")
 
+# Files to protect during force update (never overwritten by git reset)
+PROTECTED_FILES = [".env", "config.env", "session.data", "astra.db"]
+
 @astra_command(
     name="update",
     description="Updates Astra from the GitHub repository.",
@@ -182,23 +185,7 @@ async def update_cmd(client: Client, message: Message):
         if not os.path.exists(".git"):
             return await status_msg.edit("❌ **Error:** Directory is not a git repository.")
 
-        if not force:
-            proc_status = await asyncio.create_subprocess_exec(
-                'git', 'status', '--porcelain',
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout_status, _ = await proc_status.communicate()
-            if stdout_status.strip():
-                return await status_msg.edit(
-                    f"⚠️ **Uncommitted Changes Detected**\n"
-                    f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"You have local modifications that would be overwritten by a reset.\n\n"
-                    f"💡 *Options:*\n"
-                    f"1. Commit your changes locally.\n"
-                    f"2. Use `.update -f` to overwrite them (irreversible)."
-                )
-
+        # Fetch latest from remote
         await status_msg.edit(f"📥 **Astra Update Engine**\n━━━━━━━━━━━━━━━━━━━━\n📡 *Fetching updates for:* `{branch}`...")
         proc = await asyncio.create_subprocess_exec(
             'git', 'fetch', 'origin', branch,
@@ -210,15 +197,38 @@ async def update_cmd(client: Client, message: Message):
         if proc.returncode != 0:
             return await status_msg.edit(f"❌ **Fetch Failed**\n━━━━━━━━━━━━━━━━━━━━\n`{stderr.decode().strip()}`")
 
+        # Compare local vs remote
         proc_local = await asyncio.create_subprocess_exec('git', 'rev-parse', 'HEAD', stdout=asyncio.subprocess.PIPE)
         local_hash_raw, _ = await proc_local.communicate()
-        
         proc_remote = await asyncio.create_subprocess_exec('git', 'rev-parse', f'origin/{branch}', stdout=asyncio.subprocess.PIPE)
         remote_hash_raw, _ = await proc_remote.communicate()
         
         local_hash = local_hash_raw.decode().strip()
         remote_hash = remote_hash_raw.decode().strip()
 
+        # Get changelog (commits between local and remote)
+        changelog = ""
+        commit_count = 0
+        if local_hash != remote_hash:
+            proc_diff = await asyncio.create_subprocess_exec(
+                'git', 'log', '--format=%h | %s', '--max-count=10', f'HEAD..origin/{branch}',
+                stdout=asyncio.subprocess.PIPE
+            )
+            diff_text, _ = await proc_diff.communicate()
+            changelog = diff_text.decode().strip() or "Minor internal improvements."
+            
+            # Count total commits
+            proc_count = await asyncio.create_subprocess_exec(
+                'git', 'rev-list', '--count', f'HEAD..origin/{branch}',
+                stdout=asyncio.subprocess.PIPE
+            )
+            count_text, _ = await proc_count.communicate()
+            try:
+                commit_count = int(count_text.decode().strip())
+            except:
+                commit_count = len(changelog.split('\n'))
+
+        # Already up to date
         if local_hash == remote_hash and not force:
             return await status_msg.edit(
                 f"✅ **Astra is up to date**\n"
@@ -229,30 +239,47 @@ async def update_cmd(client: Client, message: Message):
                 f"✨ _No new updates found._"
             )
 
-        if local_hash != remote_hash and not force:
-            proc_diff = await asyncio.create_subprocess_exec(
-                'git', 'log', '--format=%h | %s', '--max-count=5', f'HEAD..origin/{branch}',
-                stdout=asyncio.subprocess.PIPE
+        # Show changelog and prompt for force update
+        if not force:
+            # Check for uncommitted changes
+            proc_status = await asyncio.create_subprocess_exec(
+                'git', 'status', '--porcelain',
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
-            diff_text, _ = await proc_diff.communicate()
-            
+            stdout_status, _ = await proc_status.communicate()
+            has_local_changes = bool(stdout_status.strip())
+
             proc_author = await asyncio.create_subprocess_exec(
                 'git', 'log', '-1', '--format=%an', f'origin/{branch}',
                 stdout=asyncio.subprocess.PIPE
             )
             author_text, _ = await proc_author.communicate()
             author_name = author_text.decode().strip() or "Astra Dev"
-            summary = diff_text.decode().strip() or "Minor internal improvements."
             
             update_prompt = (
-                f"🚀 **Update Available**\n"
+                f"🚀 **Update Available** ({commit_count} commit{'s' if commit_count != 1 else ''})\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
                 f"📂 **Branch:** `{branch}`\n"
-                f"👤 **Author:** `{author_name}`\n\n"
-                f"📋 **Changelog:**\n```\n{summary}```\n\n"
-                f"⚠️ *Type `.update -f` to apply changes and restart.*"
+                f"👤 **Author:** `{author_name}`\n"
+                f"🏷️ **Current:** `{local_hash[:7]}` → **New:** `{remote_hash[:7]}`\n\n"
+                f"📋 **Changelog:**\n```\n{changelog}```\n"
+            )
+            if has_local_changes:
+                update_prompt += "\n⚠️ _You have local changes that will be overwritten._\n"
+            update_prompt += (
+                f"\n🔐 **Protected files:** `.env`, `config.env`, `session.data`, `astra.db`\n"
+                f"⚡ *Type `.update -f` to apply and restart.*"
             )
             return await status_msg.edit(update_prompt)
+
+        # ── Force Update ──
+        # 1. Backup protected files
+        backups = {}
+        for pf in PROTECTED_FILES:
+            if os.path.exists(pf):
+                with open(pf, "rb") as f:
+                    backups[pf] = f.read()
 
         def get_file_hash(filepath):
             if not os.path.exists(filepath): return ""
@@ -260,8 +287,13 @@ async def update_cmd(client: Client, message: Message):
                 return hashlib.md5(f.read()).hexdigest()
 
         req_hash_before = get_file_hash("requirements.txt")
-        await status_msg.edit(f"🔄 **Astra Update Engine**\n━━━━━━━━━━━━━━━━━━━━\n⚙️ *Merging updates from `{branch}`...*")
+        await status_msg.edit(
+            f"🔄 **Astra Update Engine**\n━━━━━━━━━━━━━━━━━━━━\n"
+            f"⚙️ *Applying {commit_count} update{'s' if commit_count != 1 else ''} from `{branch}`...*\n"
+            f"🔐 _Protected files backed up._"
+        )
         
+        # 2. Hard reset to remote
         proc_reset = await asyncio.create_subprocess_exec(
             'git', 'reset', '--hard', f'origin/{branch}',
             stdout=asyncio.subprocess.PIPE,
@@ -272,6 +304,15 @@ async def update_cmd(client: Client, message: Message):
         if proc_reset.returncode != 0:
             return await status_msg.edit(f"❌ **Update Failed**\n━━━━━━━━━━━━━━━━━━━━\n`{stderr.decode().strip()}`")
 
+        # 3. Restore protected files
+        for pf, data in backups.items():
+            try:
+                with open(pf, "wb") as f:
+                    f.write(data)
+            except Exception:
+                pass
+
+        # 4. Install new deps if requirements.txt changed
         req_hash_after = get_file_hash("requirements.txt")
         if req_hash_after != req_hash_before:
             await status_msg.edit(f"📦 **Astra Update Engine**\n━━━━━━━━━━━━━━━━━━━━\n📦 *Installing new dependencies...*")
@@ -282,7 +323,22 @@ async def update_cmd(client: Client, message: Message):
             )
             await pip_proc.communicate()
 
-        await status_msg.edit("✅ **Update Complete**\n━━━━━━━━━━━━━━━━━━━━\n🚀 _Astra is restarting to apply changes..._")
+        # 5. Show final report and restart
+        final_report = (
+            f"✅ **Update Complete**\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"📂 **Branch:** `{branch}`\n"
+            f"🏷️ **Build:** `{remote_hash[:7]}`\n"
+            f"� **Changes:** {commit_count} commit{'s' if commit_count != 1 else ''}\n"
+        )
+        if changelog:
+            short_log = '\n'.join(changelog.split('\n')[:5])
+            final_report += f"\n```\n{short_log}```\n"
+        if backups:
+            final_report += f"\n🔐 **Restored:** `{', '.join(backups.keys())}`\n"
+        final_report += "\n�🚀 _Astra is restarting to apply changes..._"
+        
+        await status_msg.edit(final_report)
         await asyncio.sleep(1.5)
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
