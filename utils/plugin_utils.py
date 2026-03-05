@@ -1,9 +1,10 @@
+import asyncio
 from typing import Dict, List, Optional
 
 from config import config
 from utils.state import state
 
-from astra import Client, Filters
+from astra import Client, Filters, Message
 
 # Central metadata registry for help command
 COMMANDS_METADATA: List[Dict] = []
