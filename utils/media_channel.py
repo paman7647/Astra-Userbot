@@ -132,7 +132,18 @@ class MediaChannel:
 
         await process.wait()
         if process.returncode != 0:
-            stderr = (await process.stderr.read()).decode(errors="ignore")
+            stderr_full = (await process.stderr.read()).decode(errors="ignore")
+
+            # Filter out non-fatal warnings from stderr to find the real error
+            stderr_lines = [
+                l for l in stderr_full.split("\n") 
+                if "RequestsDependencyWarning" not in l and "urllib3" not in l and "chardet" not in l
+            ]
+            stderr = "\n".join(stderr_lines).strip()
+
+            # If after filtering stderr is empty but returncode is non-zero, use the original for context
+            if not stderr:
+                stderr = stderr_full.strip()
 
             # Smart Error Parsing
             if "This video is private" in stderr or "Private account" in stderr:
@@ -145,6 +156,51 @@ class MediaChannel:
                 raise RateLimitException()
             elif "Unsupported URL" in stderr or "invalid URL" in stderr.lower():
                 raise InvalidURLException()
+
+            # ── Instaloader Fallback for Instagram ──
+            if "instagram.com" in url:
+                try:
+                    import instaloader
+                    L = instaloader.Instaloader(
+                        dirname_pattern=os.path.join(os.path.dirname(__file__), "../temp/instaloader"),
+                        filename_pattern="{target}_{mediaid}",
+                        download_comments=False,
+                        save_metadata=False,
+                        download_geotags=False,
+                        quiet=True
+                    )
+                    
+                    await self._update_status("📡 **Astra Media Gateway**\n━━━━━━━━━━━━━━━━━━━━\n🔄 *Primary bridge failed. Attempting Instaloader fallback...*")
+                    
+                    # Extract shortcode/username
+                    shortcode_match = re.search(r"/(?:p|reels|reel|stories)/([^/?#&]+)", url)
+                    if shortcode_match:
+                        shortcode = shortcode_match.group(1)
+                        post = instaloader.Post.from_shortcode(L.context, shortcode)
+                        metadata.update({
+                            "title": post.caption[:50] if post.caption else "Instagram Post",
+                            "uploader": post.owner_username,
+                            "platform": "Instagram (Fallback)"
+                        })
+                        
+                        L.download_post(post, target=shortcode)
+                        
+                        # Find the downloaded file
+                        dl_dir = os.path.join(os.path.dirname(__file__), f"../temp/instaloader/{shortcode}")
+                        if os.path.exists(dl_dir):
+                            dl_files = [os.path.join(dl_dir, f) for f in os.listdir(dl_dir) if f.endswith(('.mp4', '.jpg', '.png'))]
+                            if dl_files:
+                                # Prioritize mp4 for "video" mode
+                                videos = [f for f in dl_files if f.endswith('.mp4')]
+                                file_path = videos[0] if videos else dl_files[0]
+                                
+                                # Move to temp for standard cleanup
+                                final_path = os.path.join(os.path.dirname(__file__), f"../temp/ig_fb_{int(time.time())}_{os.path.basename(file_path)}")
+                                os.rename(file_path, final_path)
+                                return await cache.save_to_cache(url, mode, final_path, metadata)
+                except Exception as ie:
+                    # If fallback also fails, log it and continue to raise the original MediaException
+                    print(f"Instaloader fallback failed: {str(ie)}")
 
             # Generic Bridge Error with snippet
             raise MediaException(f"Stream Error: {stderr[:200]}...")
