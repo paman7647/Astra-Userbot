@@ -69,8 +69,12 @@ class Database:
 
         # 2. Get everything from MongoDB
         mongo_data = {}
-        async for doc in self.mongo_db.state.find({}):
-            mongo_data[doc["_id"]] = {"value": doc["value"], "updated_at": doc.get("updated_at", 0)}
+        try:
+            async for doc in self.mongo_db.state.find({}):
+                mongo_data[doc["_id"]] = {"value": doc.get("value"), "updated_at": doc.get("updated_at", 0)}
+        except Exception as e:
+            logger.error(f"Failed to fetch data from MongoDB for sync: {e}")
+            return
 
         # 3. Synchronize
         all_keys = set(sqlite_data.keys()) | set(mongo_data.keys())
@@ -79,32 +83,58 @@ class Database:
             s_val = sqlite_data.get(key)
             m_val = mongo_data.get(key)
 
-            if s_val and not m_val:
-                # SQLite has it, Mongo doesn't -> Push to Mongo
-                await self.mongo_db.state.update_one(
-                    {"_id": key}, {"$set": {"value": s_val["value"], "updated_at": s_val["updated_at"]}}, upsert=True
+            # Case: Only in SQLite
+            if s_val is not None and m_val is None:
+                await self._mongo_update_task(
+                    "state", {"_id": key}, {"$set": {"value": s_val["value"], "updated_at": s_val["updated_at"]}}
                 )
-            elif m_val and not s_val:
-                # Mongo has it, SQLite doesn't -> Pull to SQLite
+            
+            # Case: Only in MongoDB
+            elif m_val is not None and s_val is None:
                 await self.sqlite_conn.execute(
                     "INSERT INTO state (key, value, updated_at) VALUES (?, ?, ?)",
                     (key, json.dumps(m_val["value"]), m_val["updated_at"]),
                 )
-            elif s_val and m_val:
-                # Both have it -> Use the latest
-                if m_val["updated_at"] > s_val["updated_at"]:
+            
+            # Case: Both exist -> Use timestamps or handle null-ish values
+            elif s_val is not None and m_val is not None:
+                s_value = s_val["value"]
+                m_value = m_val["value"]
+                s_ts = s_val["updated_at"]
+                m_ts = m_val["updated_at"]
+
+                # If SQLite value is null/empty but Mongo has a real value, pull it
+                is_sqlite_null = s_value is None or s_value == "" or s_value == [] or s_value == {}
+                is_mongo_null = m_value is None or m_value == "" or m_value == [] or m_value == {}
+
+                if is_sqlite_null and not is_mongo_null:
+                    logger.debug(f"Pulling real value for {key} from MongoDB to SQLite (SQLite was null/empty)")
                     await self.sqlite_conn.execute(
                         "UPDATE state SET value = ?, updated_at = ? WHERE key = ?",
-                        (json.dumps(m_val["value"]), m_val["updated_at"], key),
+                        (json.dumps(m_value), m_ts, key),
                     )
-                elif s_val["updated_at"] > m_val["updated_at"]:
-                    await self.mongo_db.state.update_one(
+                elif is_mongo_null and not is_sqlite_null:
+                    logger.debug(f"Pushing real value for {key} from SQLite to MongoDB (MongoDB was null/empty)")
+                    await self._mongo_update_task(
+                        "state",
                         {"_id": key},
-                        {"$set": {"value": s_val["value"], "updated_at": s_val["updated_at"]}},
-                        upsert=True,
+                        {"$set": {"value": s_value, "updated_at": s_ts}},
+                    )
+                elif m_ts > s_ts:
+                    # Normal update: Mongo is newer
+                    await self.sqlite_conn.execute(
+                        "UPDATE state SET value = ?, updated_at = ? WHERE key = ?",
+                        (json.dumps(m_value), m_ts, key),
+                    )
+                elif s_ts > m_ts:
+                    # Normal update: SQLite is newer
+                    await self._mongo_update_task(
+                        "state",
+                        {"_id": key},
+                        {"$set": {"value": s_value, "updated_at": s_ts}},
                     )
 
-        await self.sqlite_conn.commit()
+        await self.sqlite_conn.execute("COMMIT")
         logger.info("Database synchronization complete.")
 
     async def _migrate_from_json(self):
@@ -153,6 +183,22 @@ class Database:
                 logger.error(f"Failed to parse JSON for key {row[0]}: {e}")
         return results
 
+    async def _mongo_update_task(self, collection_name: str, filter_query: dict, update_data: dict, upsert: bool = True):
+        """Helper for fire-and-forget MongoDB updates to prevent Future vs Coroutine errors."""
+        try:
+            if self.mongo_db is not None:
+                await self.mongo_db[collection_name].update_one(filter_query, update_data, upsert=upsert)
+        except Exception as e:
+            logger.error(f"Background MongoDB update failed: {e}")
+
+    async def _mongo_delete_task(self, collection_name: str, filter_query: dict):
+        """Helper for fire-and-forget MongoDB deletions."""
+        try:
+            if self.mongo_db is not None:
+                await self.mongo_db[collection_name].delete_one(filter_query)
+        except Exception as e:
+            logger.error(f"Background MongoDB delete failed: {e}")
+
     async def set(self, key: str, value: Any):
         if not self.initialized:
             await self.initialize()
@@ -165,10 +211,10 @@ class Database:
         )
         await self.sqlite_conn.commit()
 
-        # Update MongoDB (fire and forget or direct?)
+        # Update MongoDB (fire and forget)
         if self.mongo_db is not None:
             asyncio.create_task(
-                self.mongo_db.state.update_one({"_id": key}, {"$set": {"value": value, "updated_at": now}}, upsert=True)
+                self._mongo_update_task("state", {"_id": key}, {"$set": {"value": value, "updated_at": now}})
             )
 
     async def increment(self, key: str, amount: int = 1):
@@ -183,12 +229,10 @@ class Database:
         )
         await self.sqlite_conn.commit()
 
-        # Update MongoDB using $inc
+        # Update MongoDB using $inc (fire and forget)
         if self.mongo_db is not None:
             asyncio.create_task(
-                self.mongo_db.state.update_one(
-                    {"_id": key}, {"$inc": {"value": amount}, "$set": {"updated_at": now}}, upsert=True
-                )
+                self._mongo_update_task("state", {"_id": key}, {"$inc": {"value": amount}, "$set": {"updated_at": now}})
             )
 
     async def delete(self, key: str):
@@ -197,7 +241,7 @@ class Database:
         await self.sqlite_conn.execute("DELETE FROM state WHERE key = ?", (key,))
         await self.sqlite_conn.commit()
         if self.mongo_db is not None:
-            asyncio.create_task(self.mongo_db.state.delete_one({"_id": key}))
+            asyncio.create_task(self._mongo_delete_task("state", {"_id": key}))
 
     async def get_stats(self) -> dict:
         """Returns statistics about the database."""
