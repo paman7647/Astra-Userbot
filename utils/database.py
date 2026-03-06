@@ -19,18 +19,12 @@ class Database:
         self.mongo_db = None
         self.sqlite_conn = None
         self.initialized = False
+        self._lock = asyncio.Lock()
 
     async def initialize(self):
         if self.initialized:
             return
 
-        # Initialize SQLite
-        self.sqlite_conn = await aiosqlite.connect(config.SQLITE_PATH)
-        await self.sqlite_conn.execute(
-            "CREATE TABLE IF NOT EXISTS state (key TEXT PRIMARY KEY, value TEXT, updated_at INTEGER)"
-        )
-        await self.sqlite_conn.execute(
-            "CREATE TABLE IF NOT EXISTS seen_memes (post_id TEXT PRIMARY KEY, subreddit TEXT, fetched_at INTEGER)"
         )
         await self.sqlite_conn.commit()
 
@@ -135,7 +129,7 @@ class Database:
                         {"$set": {"value": s_value, "updated_at": s_ts}},
                     )
 
-        await self.sqlite_conn.execute("COMMIT")
+        await self.sqlite_conn.commit()
         logger.info("Database synchronization complete.")
 
     async def _migrate_from_json(self):
