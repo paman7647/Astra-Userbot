@@ -26,12 +26,11 @@ async def todoc_handler(client: Client, message: Message):
         mimetype = "video/mp4" if ext == "mp4" else "image/jpeg"
         
         # In whatsapp-web.js / Astra, setting sendMediaAsDocument in options triggers document upload
-        await client.send_media(
+        await client.send_file(
             message.chat_id, 
             temp_file, 
-            mimetype, 
             caption="📄 *Converted to Document*",
-            options={"sendMediaAsDocument": True}
+            document=True
         )
         await status_msg.delete()
 
@@ -58,12 +57,10 @@ async def toimg_handler(client: Client, message: Message):
             return await status_msg.edit("❌ Failed to download document.")
 
         # Ensure we send it explicitly without the document flag
-        await client.send_media(
+        await client.send_image(
             message.chat_id, 
             temp_file, 
-            "image/jpeg", 
-            caption="🖼️ *Converted to Image*",
-            options={"sendMediaAsDocument": False}
+            caption="🖼️ *Converted to Image*"
         )
         await status_msg.delete()
 
@@ -111,12 +108,10 @@ async def pdf2img_handler(client: Client, message: Message):
             temp_img = f"/tmp/astra_pdf_out_{int(time.time())}_page_{page_num+1}.jpg"
             pix.save(temp_img)
             
-            await client.send_media(
+            await client.send_image(
                 message.chat_id, 
                 temp_img, 
-                "image/jpeg", 
-                caption=f"📄 *Page {page_num + 1} of {num_pages}*",
-                options={"sendMediaAsDocument": False}
+                caption=f"📄 *Page {page_num + 1} of {num_pages}*"
             )
             
             if os.path.exists(temp_img):

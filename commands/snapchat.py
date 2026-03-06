@@ -4,9 +4,8 @@ from utils.helpers import edit_or_reply
 import cv2
 import numpy as np
 from PIL import Image
-from commands import astra_command, edit_or_reply, extract_args
-from astra.types import Message
-from utils.plugin_utils import Message
+from . import *
+from utils.helpers import edit_or_reply
 import tempfile
 
 try:
@@ -51,7 +50,7 @@ async def snapchat_handler(client, message: Message):
         if isinstance(result, str) and result.startswith("Error"):
             return await status.edit(f"❌ {result}")
 
-        await client.chat.send_message(message.chat_id, caption=f"✨ Applied `{filter_type}` filter", file=output_path, reply_to=message.id)
+        await client.send_image(message.chat_id, output_path, caption=f"✨ Applied `{filter_type}` filter", reply_to=message.id)
         await status.delete()
     except Exception as e:
         await status.edit(f"❌ Processing Error: {str(e)}")
@@ -60,7 +59,7 @@ async def snapchat_handler(client, message: Message):
         if os.path.exists(output_path): os.remove(output_path)
 
 def apply_ar_filter(input_path, output_path, filter_type):
-    img = cv2.imread(input_path)
+    img = cv2.imread(input_path) # pylint: disable=no-member
     if img is None: return "Error: Could not read image."
     
     h, w = img.shape[:2]
@@ -71,7 +70,7 @@ def apply_ar_filter(input_path, output_path, filter_type):
         refine_landmarks=True,
         min_detection_confidence=0.5
     ) as face_mesh:
-        results = face_mesh.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        results = face_mesh.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)) # pylint: disable=no-member
         
         if not results.multi_face_landmarks:
             return "No faces detected in the image."
@@ -88,7 +87,7 @@ def apply_ar_filter(input_path, output_path, filter_type):
             else:
                 return f"Unknown filter: {filter_type}. Try: dog, glasses, beautify, blur"
 
-    cv2.imwrite(output_path, img)
+    cv2.imwrite(output_path, img) # pylint: disable=no-member
     return True
 
 def overlay_filter(img, landmarks, type):
@@ -98,12 +97,12 @@ def overlay_filter(img, landmarks, type):
         # Draw dog ears/nose placeholders
         for idx in [33, 263, 1]: # Left eye, Right eye, Nose tip
             pt = landmarks.landmark[idx]
-            cv2.circle(img, (int(pt.x * img.shape[1]), int(pt.y * img.shape[0])), 10, (100, 50, 0), -1)
+            cv2.circle(img, (int(pt.x * img.shape[1]), int(pt.y * img.shape[0])), 10, (100, 50, 0), -1) # pylint: disable=no-member
     return img
 
 def beautify_face(img, landmarks):
     # Smooth skin while preserving edges
-    return cv2.bilateralFilter(img, 9, 75, 75)
+    return cv2.bilateralFilter(img, 9, 75, 75) # pylint: disable=no-member
 
 def blur_background(img, landmarks):
     # Simple radial blur around the face
@@ -112,9 +111,9 @@ def blur_background(img, landmarks):
     points = []
     for landmark in landmarks.landmark:
         points.append((int(landmark.x * img.shape[1]), int(landmark.y * img.shape[0])))
-    hull = cv2.convexHull(np.array(points))
-    cv2.fillConvexPoly(mask, hull, 255)
+    hull = cv2.convexHull(np.array(points)) # pylint: disable=no-member
+    cv2.fillConvexPoly(mask, hull, 255) # pylint: disable=no-member
     
-    blurred = cv2.GaussianBlur(img, (21, 21), 0)
+    blurred = cv2.GaussianBlur(img, (21, 21), 0) # pylint: disable=no-member
     img = np.where(mask[:, :, None] == 255, img, blurred)
     return img

@@ -54,7 +54,7 @@ async def qrgen_handler(client: Client, message: Message):
         with open(temp_path, "wb") as f:
             f.write(bio.read())
 
-        await client.send_media(message.chat_id, temp_path, "image/png", caption=f"QR Code for: `{text}`")
+        await client.send_image(message.chat_id, temp_path, caption=f"QR Code for: `{text}`")
         await status.delete()
         
         if os.path.exists(temp_path):
@@ -80,7 +80,7 @@ async def qrread_handler(client: Client, message: Message):
 
     status = await edit_or_reply(message, "Scanning QR code...")
     try:
-        media_path = await client.download_media(message.quoted)
+        media_path = await message.quoted.download()
         if not media_path:
             return await status.edit("Failed to download image.")
 
@@ -115,7 +115,7 @@ async def rmbg_handler(client: Client, message: Message):
 
     status = await edit_or_reply(message, "Removing background... (This may take a moment)")
     try:
-        media_path = await client.download_media(message.quoted)
+        media_path = await message.quoted.download()
         if not media_path:
             return await status.edit("Failed to download image.")
 
@@ -129,7 +129,7 @@ async def rmbg_handler(client: Client, message: Message):
         with open(temp_out, "wb") as o:
             o.write(output_data)
 
-        await client.send_media(message.chat_id, temp_out, "image/png")
+        await client.send_image(message.chat_id, temp_out)
         await status.delete()
         
         # Cleanup

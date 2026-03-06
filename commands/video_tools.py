@@ -105,8 +105,12 @@ async def apply_video_edit(client: Client, message: Message, edit_type: str):
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, process_video)
 
-        mimetype = "image/gif" if edit_type == "togif" else "audio/mp3" if edit_type == "audio" else "video/mp4"
-        await client.send_media(message.chat_id, temp_out, mimetype, caption=f"🎬 **Media Effect:** `{edit_type}`")
+        if edit_type == "togif":
+            await client.send_media(message.chat_id, temp_out, mimetype="image/gif", caption="🎬 **Media Effect:** `togif`")
+        elif edit_type == "audio":
+            await client.send_audio(message.chat_id, temp_out, caption="🎬 **Media Effect:** `audio` (Extracted)")
+        else:
+            await client.send_video(message.chat_id, temp_out, caption=f"🎬 **Media Effect:** `{edit_type}`")
         await status_msg.delete()
 
     except Exception as e:
