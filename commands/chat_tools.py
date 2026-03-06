@@ -22,10 +22,10 @@ async def pinchat_handler(client: Client, message: Message):
 
     try:
         if unpin:
-            await api.pin_chat(message.chat_id)
+            await api.pin_chat(message.chat_id, pin=False)
             await edit_or_reply(message, "📌 Chat unpinned.")
         else:
-            result = await api.pin_chat(message.chat_id)
+            result = await api.pin_chat(message.chat_id, pin=True)
             if result:
                 await edit_or_reply(message, "📌 Chat pinned.")
             else:
