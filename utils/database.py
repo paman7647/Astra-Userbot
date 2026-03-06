@@ -50,7 +50,7 @@ class Database:
 
     async def _sync_on_startup(self):
         """Syncs data between SQLite and MongoDB."""
-        if not self.mongo_db:
+        if self.mongo_db is None:
             # If no mongo, maybe migrate from JSON to SQLite?
             await self._migrate_from_json()
             return
@@ -166,7 +166,7 @@ class Database:
         await self.sqlite_conn.commit()
 
         # Update MongoDB (fire and forget or direct?)
-        if self.mongo_db:
+        if self.mongo_db is not None:
             asyncio.create_task(
                 self.mongo_db.state.update_one({"_id": key}, {"$set": {"value": value, "updated_at": now}}, upsert=True)
             )
@@ -184,7 +184,7 @@ class Database:
         await self.sqlite_conn.commit()
 
         # Update MongoDB using $inc
-        if self.mongo_db:
+        if self.mongo_db is not None:
             asyncio.create_task(
                 self.mongo_db.state.update_one(
                     {"_id": key}, {"$inc": {"value": amount}, "$set": {"updated_at": now}}, upsert=True
@@ -196,7 +196,7 @@ class Database:
             await self.initialize()
         await self.sqlite_conn.execute("DELETE FROM state WHERE key = ?", (key,))
         await self.sqlite_conn.commit()
-        if self.mongo_db:
+        if self.mongo_db is not None:
             asyncio.create_task(self.mongo_db.state.delete_one({"_id": key}))
 
     async def get_stats(self) -> dict:
@@ -224,7 +224,7 @@ class Database:
         }
         
         # MongoDB Stats
-        if self.mongo_db:
+        if self.mongo_db is not None:
             try:
                 m_state_count = await self.mongo_db.state.count_documents({})
                 stats["mongodb"] = {
