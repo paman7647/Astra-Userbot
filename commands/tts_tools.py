@@ -22,10 +22,14 @@ async def tts_handler(client: Client, message: Message):
     text = ""
     
     if args:
-        # Check if first arg is a valid 2-letter language code
-        if len(args[0]) == 2 and args[0].isalpha():
-            lang = args[0].lower()
-            text = " ".join(args[1:])
+        # Check if first arg is a valid 2-letter language code AND there's more text
+        if len(args[0]) == 2 and args[0].lower() in ["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh", "hi", "ar"]:
+            if len(args) > 1:
+                lang = args[0].lower()
+                text = " ".join(args[1:])
+            else:
+                # Only one 2-letter word provided, treat it as text in default lang
+                text = args[0]
         else:
             text = " ".join(args)
             
@@ -46,10 +50,9 @@ async def tts_handler(client: Client, message: Message):
         tts = gTTS(text=text, lang=lang, slow=False)
         tts.save(temp_audio)
         
-        await client.send_media(
+        await client.send_audio(
             message.chat_id, 
             temp_audio, 
-            "audio/mp3", 
             caption=f"🗣️ **TTS Generated:** `{lang}`",
             options={"sendAudioAsVoice": True}
         )
