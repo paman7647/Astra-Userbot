@@ -13,7 +13,7 @@ import time
 import traceback
 from typing import Optional
 
-from utils.database import db
+# from utils.database import db (Moved to local imports to prevent circularity)
 
 logger = logging.getLogger("Astra.ErrorReporter")
 
@@ -35,6 +35,7 @@ class ErrorReporter:
         if cls._initialized:
             return
 
+        from utils.database import db
         stored = await db.get("error_log_group_id")
         if stored:
             cls._group_id = stored
@@ -52,6 +53,7 @@ class ErrorReporter:
                 gid = str(gid)
 
                 cls._group_id = gid
+                from utils.database import db
                 await db.set("error_log_group_id", gid)
 
                 try:
@@ -173,6 +175,7 @@ class ErrorReporter:
     @classmethod
     async def boot_message(cls, client, plugin_count: int = 0):
         """Send startup notification to error group (or DM fallback)."""
+        from utils.database import db
         from config import config
 
         custom_msg = await db.get("STARTUP_MESSAGE")

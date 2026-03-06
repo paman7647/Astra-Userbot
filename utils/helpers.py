@@ -175,7 +175,7 @@ async def safe_edit(message: Message, content: str, **kwargs):
 
 # Error reporting is now handled by the centralized ErrorReporter module.
 # It auto-creates a WhatsApp group for logs, falling back to owner DM.
-from utils.error_reporter import report_error, handle_command_error, ErrorReporter
+# from utils.error_reporter import report_error, handle_command_error, ErrorReporter (unused here, triggers circularity)
 
 
 async def get_contact_name(client, jid: str) -> str:
