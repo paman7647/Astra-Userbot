@@ -229,12 +229,14 @@ class MediaChannel:
 
             # Non-fastmode: Show a simple "Uploading" status without a granular progress bar for a cleaner look
             # as per user request to "show uploading etc in non fastmode without progress etc"
+            pct = (current / total) * 100
+            bar = get_progress_bar(pct)
             await self._update_status(
                 f"⚡ **Astra Media Gateway**\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
                 f"✨ *{metadata['title']}*\n\n"
-                f"📤 **Uploading to WhatsApp...**\n"
-                f"📂 *Size:* `{size_str}`",
+                f"📤 **Stream:** {bar}\n"
+                f"📂 **Size:** `{size_str}`",
                 is_progress=True,
             )
 
@@ -253,8 +255,8 @@ class MediaChannel:
                     f"⚡ **Astra Media Gateway**\n"
                     f"━━━━━━━━━━━━━━━━━━━━\n"
                     f"✨ *{metadata['title']}*\n\n"
-                    f"📤 **Uploading to WhatsApp...**\n"
-                    f"📂 *Size:* `{size_str}`",
+                    f"📤 **Stream:** {get_progress_bar(0)}\n"
+                    f"📂 **Size:* `{size_str}`",
                     force=True,
                 )
 
