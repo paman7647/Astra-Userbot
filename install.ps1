@@ -1,31 +1,69 @@
-<#
-.SYNOPSIS
-Astra-Userbot Auto-Installer for Windows users.
-#>
+param (
+    [switch]$Auto
+)
 
-Write-Host "🚀 Welcome to the Astra-Userbot Auto-Installer" -ForegroundColor Cyan
-Write-Host "-----------------------------------------------" -ForegroundColor Cyan
+function Info($m){Write-Host "INFO  $m" -ForegroundColor Cyan}
+function Ok($m){Write-Host "OK    $m" -ForegroundColor Green}
+function Warn($m){Write-Host "WARN  $m" -ForegroundColor Yellow}
+function Err($m){Write-Host "ERR   $m" -ForegroundColor Red}
 
-# Check if git is installed
+Write-Host ""
+Write-Host "Astra Userbot Installer" -ForegroundColor White
+Write-Host "----------------------------------" -ForegroundColor DarkGray
+Write-Host ""
+
+# Ensure Git is available
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ Git is not installed. Attempting to install git via winget..." -ForegroundColor Yellow
-    winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements | Out-Null
-    # Note: Winget updates path, but current terminal may need reload
-}
+    Warn "Git not found. Installing..."
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements | Out-Null
+        Ok "Git installed (restart terminal if needed)"
+    } else {
+        Err "winget not available. Install Git manually."
+        exit 1
+    }
+} else { Ok "Git ready" }
 
-# Clone the repository
-if (Test-Path "Astra-Userbot") {
-    Write-Host "⚠️ Directory 'Astra-Userbot' already exists. Updating..." -ForegroundColor Yellow
-    Set-Location Astra-Userbot
+# Ensure Python is available
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+    Warn "Python not found. Installing..."
+    winget install --id Python.Python.3.11 -e --accept-source-agreements --accept-package-agreements | Out-Null
+    Ok "Python installed"
+} else { Ok "Python ready" }
+
+$Repo="https://github.com/paman7647/Astra-Userbot.git"
+$Dir="Astra-Userbot"
+
+# Clone or update repository
+if (Test-Path $Dir) {
+    Warn "Repository exists. Updating..."
+    Set-Location $Dir
     git pull origin main
-}
-else {
-    Write-Host "📥 Cloning Astra-Userbot repository..." -ForegroundColor Cyan
-    git clone https://github.com/paman7647/Astra-Userbot.git
-    Set-Location Astra-Userbot
+} else {
+    Info "Cloning repository..."
+    git clone $Repo
+    Set-Location $Dir
 }
 
-# Run the setup script
-Write-Host "⚙️ Executing platform setup..." -ForegroundColor Cyan
+# Allow script execution for current session
 Set-ExecutionPolicy Bypass -Scope Process -Force
-.\setup.ps1
+
+# Ensure setup script exists
+if (-not (Test-Path ".\setup.ps1")) {
+    Err "setup.ps1 not found"
+    exit 1
+}
+
+# Run setup
+if ($Auto) {
+    Info "Running setup in auto mode"
+    powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Auto
+} else {
+    Info "Running setup"
+    powershell -ExecutionPolicy Bypass -File .\setup.ps1
+}
+
+Ok "Installation complete"
+Write-Host ""
+Write-Host "Run the bot using:"
+Write-Host "python bot.py"
