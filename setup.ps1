@@ -1,70 +1,120 @@
-<#
-.SYNOPSIS
-Unattended Windows setup for Astra Userbot.
-#>
+param (
+    [switch]$Auto
+)
 
 function Info($m){Write-Host "INFO  $m" -ForegroundColor Cyan}
 function Ok($m){Write-Host "OK    $m" -ForegroundColor Green}
 function Warn($m){Write-Host "WARN  $m" -ForegroundColor Yellow}
 function Err($m){Write-Host "ERR   $m" -ForegroundColor Red}
 
+function Ask($q) {
+    return Read-Host "$q"
+}
+
+function ValidatePhone($p) {
+    return $p -match '^[0-9]{8,15}$'
+}
+
 Write-Host ""
-Write-Host "Astra Userbot Setup (Unattended)" -ForegroundColor White
+Write-Host "Astra Userbot Setup" -ForegroundColor White
 Write-Host "----------------------------------" -ForegroundColor DarkGray
 Write-Host ""
 
-# Install deps via winget if available
-if (Get-Command winget -ErrorAction SilentlyContinue) {
-    Info "Installing FFmpeg..."
-    winget install -e --id Gyan.FFmpeg --accept-source-agreements --accept-package-agreements | Out-Null
+# =========================
+# INPUT MODE
+# =========================
+if (-not $Auto) {
 
-    Info "Installing Node.js..."
-    winget install -e --id OpenJS.NodeJS --accept-source-agreements --accept-package-agreements | Out-Null
+    do {
+        $PHONE = Ask "Enter WhatsApp number (country code, no +)"
+        if (-not (ValidatePhone $PHONE)) {
+            Warn "Invalid format. Example: 919876543210"
+        }
+    } while (-not (ValidatePhone $PHONE))
+
+    do {
+        $OWNER_NAME = Ask "Enter owner name"
+        if ([string]::IsNullOrWhiteSpace($OWNER_NAME)) {
+            Warn "Owner name cannot be empty"
+        }
+    } while ([string]::IsNullOrWhiteSpace($OWNER_NAME))
+
+    $useMongo = Ask "Use MongoDB? (y/N)"
+    if ($useMongo -match '^[Yy]$') {
+        do {
+            $MONGO_URI = Ask "Enter MongoDB URI"
+            if ([string]::IsNullOrWhiteSpace($MONGO_URI)) {
+                Warn "Mongo URI cannot be empty"
+            }
+        } while ([string]::IsNullOrWhiteSpace($MONGO_URI))
+    } else {
+        $MONGO_URI = ""
+    }
+
+    $GEMINI_API_KEY = Ask "Gemini API key (optional)"
+    $NEWS_GEMINI_API_KEY = Ask "News Gemini API key (optional)"
+
 } else {
-    Warn "winget not found. Install FFmpeg and Node.js manually."
+    Info "Auto mode enabled (using environment variables)"
+
+    if (-not $env:PHONE_NUMBER) {
+        Err "PHONE_NUMBER required in auto mode"
+        exit 1
+    }
+
+    $PHONE = $env:PHONE_NUMBER
+    $OWNER_NAME = $env:OWNER_NAME
+    $MONGO_URI = $env:MONGO_URI
+    $GEMINI_API_KEY = $env:GEMINI_API_KEY
+    $NEWS_GEMINI_API_KEY = $env:NEWS_GEMINI_API_KEY
 }
 
-# Check Python
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-    Err "Python not found. Install Python 3.10+ and retry."
-    exit 1
-}
-Ok "Python ready"
+# =========================
+# DERIVED
+# =========================
+$OWNER_WHATSAPP_ID = "$PHONE@c.us"
+$BOT_OWNER_ID = $PHONE
 
-# Create venv
-Info "Creating virtual environment..."
-python -m venv venv
+# =========================
+# WRITE ENV
+# =========================
+Info "Creating .env file..."
 
-if (-not (Test-Path "venv\Scripts\activate.ps1")) {
-    Err "Virtual environment creation failed"
-    exit 1
-}
-Ok "Virtual environment ready"
+@"
+BOT_NAME=Astra Userbot
+COMMAND_PREFIX=.
 
-# Install Python deps (force-safe)
-Info "Installing Python dependencies..."
-& .\venv\Scripts\python.exe -m pip install --upgrade pip | Out-Null
+OWNER_WHATSAPP_ID=$OWNER_WHATSAPP_ID
+OWNER_NAME=$OWNER_NAME
+BOT_OWNER_ID=$BOT_OWNER_ID
+PHONE_NUMBER=$PHONE
 
-& .\venv\Scripts\python.exe -m pip install -r requirements.txt `
-    || & .\venv\Scripts\python.exe -m pip install -r requirements.txt --break-system-packages `
-    || Warn "Some dependencies may have failed"
+ENABLE_AI=true
+ENABLE_YOUTUBE=true
+ENABLE_INSTAGRAM=true
+ENABLE_PM_PROTECTION=true
+PM_WARN_LIMIT=5
 
-Ok "Dependencies installed"
+ASTRA_HEADLESS=true
+ASTRA_SESSION_ID=ASTRA
+ASTRA_PHONE_PAIRING=false
 
-# Install browser
-Info "Installing Playwright browser..."
+MONGO_URI=$MONGO_URI
+SQLITE_PATH=bot_state.db
+DATABASE_SYNC_INTERVAL=300
 
-& .\venv\Scripts\playwright.exe install chrome `
-    || & .\venv\Scripts\playwright.exe install chromium
+GEMINI_API_KEY=$GEMINI_API_KEY
+NEWS_GEMINI_API_KEY=$NEWS_GEMINI_API_KEY
 
-Ok "Browser setup complete"
+MAX_FILE_SIZE_MB=50
+REQUEST_TIMEOUT=30000
 
-# Final instructions
-Write-Host ""
-Ok "Setup complete"
+FFMPEG_PATH=ffmpeg
+"@ | Out-File -Encoding utf8 .env
+
+Ok ".env created"
+
 Write-Host ""
 Write-Host "Next steps:"
-Write-Host "copy .env.example .env"
-Write-Host "edit .env with your values"
 Write-Host ".\venv\Scripts\activate"
 Write-Host "python bot.py"
