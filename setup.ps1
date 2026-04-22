@@ -1,44 +1,70 @@
 <#
 .SYNOPSIS
-Unattended Windows installation script for Astra Userbot.
+Unattended Windows setup for Astra Userbot.
 #>
 
-Write-Host "🚀 Starting Astra Userbot Unattended Windows Setup..." -ForegroundColor Cyan
+function Info($m){Write-Host "INFO  $m" -ForegroundColor Cyan}
+function Ok($m){Write-Host "OK    $m" -ForegroundColor Green}
+function Warn($m){Write-Host "WARN  $m" -ForegroundColor Yellow}
+function Err($m){Write-Host "ERR   $m" -ForegroundColor Red}
 
-# 1. Dependency Checks & Winget Install
+Write-Host ""
+Write-Host "Astra Userbot Setup (Unattended)" -ForegroundColor White
+Write-Host "----------------------------------" -ForegroundColor DarkGray
+Write-Host ""
+
+# Install deps via winget if available
 if (Get-Command winget -ErrorAction SilentlyContinue) {
-    Write-Host "📦 Installing FFmpeg via Winget..." -ForegroundColor Yellow
+    Info "Installing FFmpeg..."
     winget install -e --id Gyan.FFmpeg --accept-source-agreements --accept-package-agreements | Out-Null
-    Write-Host "📦 Installing Node.js via Winget..." -ForegroundColor Yellow
+
+    Info "Installing Node.js..."
     winget install -e --id OpenJS.NodeJS --accept-source-agreements --accept-package-agreements | Out-Null
 } else {
-    Write-Host "⚠️ Winget not found. Ensure FFmpeg and Node.js are physically installed." -ForegroundColor Yellow
+    Warn "winget not found. Install FFmpeg and Node.js manually."
 }
 
-# 2. Verify Python
+# Check Python
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ Python is missing! Please install Python 3.10+ from python.org" -ForegroundColor Red
+    Err "Python not found. Install Python 3.10+ and retry."
     exit 1
 }
+Ok "Python ready"
 
-# 3. Create Virtual Environment
-Write-Host "🐍 Creating Virtual Environment..." -ForegroundColor Yellow
+# Create venv
+Info "Creating virtual environment..."
 python -m venv venv
+
 if (-not (Test-Path "venv\Scripts\activate.ps1")) {
-    Write-Host "❌ Failed to create Virtual Environment." -ForegroundColor Red
+    Err "Virtual environment creation failed"
     exit 1
 }
+Ok "Virtual environment ready"
 
-# 4. Install Dependencies
-Write-Host "📦 Installing pip dependencies..." -ForegroundColor Yellow
+# Install Python deps (force-safe)
+Info "Installing Python dependencies..."
 & .\venv\Scripts\python.exe -m pip install --upgrade pip | Out-Null
-& .\venv\Scripts\python.exe -m pip install -r requirements.txt | Out-Null
 
-Write-Host "🎭 Installing Playwright browser engines..." -ForegroundColor Yellow
-& .\venv\Scripts\playwright.exe install chromium
+& .\venv\Scripts\python.exe -m pip install -r requirements.txt `
+    || & .\venv\Scripts\python.exe -m pip install -r requirements.txt --break-system-packages `
+    || Warn "Some dependencies may have failed"
 
-Write-Host "✅ Unattended Windows Setup Complete!" -ForegroundColor Green
-Write-Host "👉 To configure and run the bot:" -ForegroundColor Cyan
-Write-Host "   1. copy .env.example .env (Edit your credentials)"
-Write-Host "   2. .\venv\Scripts\activate"
-Write-Host "   3. python bot.py"
+Ok "Dependencies installed"
+
+# Install browser
+Info "Installing Playwright browser..."
+
+& .\venv\Scripts\playwright.exe install chrome `
+    || & .\venv\Scripts\playwright.exe install chromium
+
+Ok "Browser setup complete"
+
+# Final instructions
+Write-Host ""
+Ok "Setup complete"
+Write-Host ""
+Write-Host "Next steps:"
+Write-Host "copy .env.example .env"
+Write-Host "edit .env with your values"
+Write-Host ".\venv\Scripts\activate"
+Write-Host "python bot.py"
