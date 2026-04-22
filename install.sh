@@ -1,33 +1,188 @@
 #!/bin/bash
 
-echo "🚀 Welcome to the Astra-Userbot Auto-Installer"
-echo "-----------------------------------------------"
+set -e
 
-# Check if git is installed
-if ! command -v git &> /dev/null; then
-    echo "❌ Git is not installed. Attempting to install git..."
-    if command -v apt &> /dev/null; then
-        sudo apt update && sudo apt install -y git
-    elif command -v brew &> /dev/null; then
+REPO_URL="https://github.com/paman7647/Astra-Userbot.git"
+DIR_NAME="Astra-Userbot"
+
+RESET="\033[0m"
+BOLD="\033[1m"
+DIM="\033[2m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+RED="\033[31m"
+CYAN="\033[36m"
+
+log()   { echo -e "${CYAN}INFO${RESET} $1"; }
+ok()    { echo -e "${GREEN}OK${RESET}   $1"; }
+warn()  { echo -e "${YELLOW}WARN${RESET} $1"; }
+fail()  { echo -e "${RED}ERR${RESET}  $1"; }
+
+line() { printf "%b\n" "${DIM}--------------------------------------------------${RESET}"; }
+
+
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+install_git() {
+    if command_exists git; then
+        ok "Git already installed"
+        return
+    fi
+
+    log "Installing Git..."
+
+    if command_exists apt; then
+        sudo apt update
+        sudo apt install -y git
+    elif command_exists brew; then
         brew install git
     else
-        echo "⚠️ Could not install git automatically. Please install git and run again."
+        fail "Could not install Git automatically"
         exit 1
     fi
-fi
 
-# Clone the repository
-if [ -d "Astra-Userbot" ]; then
-    echo "⚠️ Directory 'Astra-Userbot' already exists. Updating..."
-    cd Astra-Userbot
-    git pull origin main
-else
-    echo "📥 Cloning Astra-Userbot repository..."
-    git clone https://github.com/paman7647/Astra-Userbot.git
-    cd Astra-Userbot
-fi
+    ok "Git installed"
+}
 
-# Make the setup script executable and run it
-echo "⚙️ Executing platform setup..."
-chmod +x setup.sh
-./setup.sh
+install_system_deps() {
+    log "Installing system dependencies..."
+
+    OS="$(uname)"
+
+    if [ "$OS" = "Darwin" ]; then
+        if ! command_exists brew; then
+            log "Installing Homebrew..."
+            NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+
+        brew install node ffmpeg yt-dlp python3
+
+    elif [ "$OS" = "Linux" ]; then
+        if command_exists apt; then
+            sudo apt update
+            sudo apt install -y \
+                nodejs npm \
+                ffmpeg \
+                python3 python3-venv python3-pip \
+                wget curl
+        else
+            fail "Unsupported Linux distribution"
+            exit 1
+        fi
+    fi
+
+    ok "System dependencies installed"
+}
+
+setup_python() {
+    log "Setting up Python environment..."
+
+    if [ ! -d "venv" ]; then
+        python3 -m venv venv
+        ok "Virtual environment created"
+    else
+        warn "Virtual environment already exists"
+    fi
+
+    # Activate venv
+    source venv/bin/activate
+
+    # Upgrade pip (global + venv)
+    pip install --upgrade pip || true
+    pip3 install --upgrade pip || true
+
+    # Install deps (force fallback)
+    if [ -f "requirements.txt" ]; then
+        log "Installing Python dependencies..."
+
+        pip install -r requirements.txt || \
+        pip install -r requirements.txt --break-system-packages || \
+        warn "Some dependencies failed to install"
+
+        ok "Python dependencies installed"
+    else
+        warn "requirements.txt not found"
+    fi
+}
+
+setup_browser() {
+    log "Setting up browser..."
+
+    # Termux detection
+    if [ -d "/data/data/com.termux" ]; then
+        ok "Termux detected → installing Chromium"
+
+        pkg update -y
+        pkg install -y chromium
+
+        playwright install chromium || true
+        return
+    fi
+
+    # Standard systems → Chrome
+    if command_exists google-chrome; then
+        ok "Google Chrome already installed"
+    else
+        log "Installing Google Chrome..."
+
+        OS="$(uname)"
+
+        if [ "$OS" = "Darwin" ]; then
+            brew install --cask google-chrome || warn "Chrome install failed"
+        elif [ "$OS" = "Linux" ]; then
+            wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            sudo apt install -y ./google-chrome-stable_current_amd64.deb || true
+            rm -f google-chrome-stable_current_amd64.deb
+        fi
+    fi
+
+    log "Installing Playwright browser..."
+
+    playwright install chrome || playwright install chromium
+
+    ok "Browser setup complete"
+}
+
+clone_or_update_repo() {
+    if [ -d "$DIR_NAME" ]; then
+        log "Repository exists → updating..."
+        cd "$DIR_NAME"
+        git pull origin main
+    else
+        log "Cloning repository..."
+        git clone "$REPO_URL"
+        cd "$DIR_NAME"
+    fi
+
+    ok "Repository ready"
+}
+
+run_setup() {
+    log "Running setup.sh (interactive configuration)..."
+
+    chmod +x setup.sh
+    ./setup.sh
+
+    ok "Setup completed"
+}
+
+clear 2>/dev/null || true
+echo -e "${BOLD}Astra Userbot Local Installer${RESET}"
+line
+
+install_git
+clone_or_update_repo
+install_system_deps
+setup_python
+setup_browser
+run_setup
+
+line
+ok "Astra installation complete"
+
+echo ""
+echo "Run the bot using:"
+echo "source venv/bin/activate"
+echo "python bot.py"
