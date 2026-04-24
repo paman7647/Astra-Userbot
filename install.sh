@@ -79,33 +79,45 @@ install_system_deps() {
 setup_python() {
     log "Setting up Python environment..."
 
-    if [ ! -d "venv" ]; then
-        python3 -m venv venv
-        ok "Virtual environment created"
-    else
-        warn "Virtual environment already exists"
+    VENV_SUCCESS=false
+
+    # TRY: Create the virtual environment
+    if [ ! -d venv ]; then
+        if python3 -m venv venv; then
+            ok "Virtual environment created"
+        else
+            warn "Venv creation failed"
+        fi
     fi
 
-    # Activate venv
-    source venv/bin/activate
+    # TRY: Activate and use venv
+    if [ -d venv ] && source venv/bin/activate 2>/dev/null; then
+        log "Installing dependencies in venv..."
+        pip install --upgrade pip
+        
+        if [ -f requirements.txt ]; then
+            pip install -r requirements.txt || warn "Venv dependencies failed"
+        fi
+        VENV_SUCCESS=true
+        ok "Python dependencies installed in venv"
+    fi
 
-    # Upgrade pip (global + venv)
-    pip install --upgrade pip || true
-    pip3 install --upgrade pip || true
-
-    # Install deps (force fallback)
-    if [ -f "requirements.txt" ]; then
-        log "Installing Python dependencies..."
-
-        pip install -r requirements.txt || \
-        pip install -r requirements.txt --break-system-packages || \
-        warn "Some dependencies failed to install"
-
-        ok "Python dependencies installed"
-    else
-        warn "requirements.txt not found"
+    # EXCEPT: Fallback to global --user installation if venv failed
+    if [ "$VENV_SUCCESS" = false ]; then
+        warn "Venv failed.  installing global"
+        
+        # Upgrade pip for user
+        pip3 install --user --upgrade pip --break-system-packages 2>/dev/null || true
+        
+        if [ -f requirements.txt ]; then
+            log "Installing dependencies ..."
+            pip3 install --user -r requirements.txt --break-system-packages || \
+            warn "Global user installation failed"
+        fi
+        ok "Python dependencies installed globally via --user"
     fi
 }
+
 
 setup_browser() {
     log "Setting up browser..."
