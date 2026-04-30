@@ -18,5 +18,5 @@ instaloader>=4.15.1
 PyMuPDF>=1.27.2.2
 gTTS>=2.5.1
 colorgram.py>=1.2.0
-moviepy>=1.0.3
+moviepy>=2.2.1
 opencv-python
