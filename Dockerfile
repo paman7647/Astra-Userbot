@@ -1,5 +1,5 @@
 
-FROM python:3.11-slim-bookworm
+FROM python:3.14-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     NODE_VERSION=20 \
